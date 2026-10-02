@@ -19,6 +19,7 @@ import type {
     ISessionStore,
     IGameDataStore,
     IAuthStore,
+    IPersonaStore,
 } from "./interfaces.js";
 
 /**
@@ -109,6 +110,21 @@ class DatabaseProvider {
             );
         }
         return this.services.auth;
+    }
+
+    /**
+     * Gets the persona store for personas in PostgreSQL
+     *
+     * @returns The persona store instance
+     * @throws Error if provider not initialized
+     */
+    getPersonaStore(): IPersonaStore {
+        if (!this.services) {
+            throw new Error(
+                "DatabaseProvider not initialized. Call register() first.",
+            );
+        }
+        return this.services.persona;
     }
 
     /**

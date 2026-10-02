@@ -101,6 +101,7 @@ describe('handleGetServerInfo', () => {
                 session: mockSessionStore,
                 gameData: {} as never,
                 auth: {} as never,
+                persona: {} as never,
             });
         });
 

@@ -102,6 +102,12 @@ export interface IAuthStore {
     /** Makes contextId the customer's only session, ending any earlier one. */
     startSession(customerId: number, contextId: string): void;
 
+    /** Records the address the NPS login for contextId came from. */
+    bindSessionAddress(contextId: string, remoteAddress: string): void;
+
+    /** The address the customer's session logged in from, if it has logged in. */
+    findSessionAddress(customerId: number): string | undefined;
+
     registerNewUser(
         username: string,
         password: string,
@@ -112,10 +118,35 @@ export interface IAuthStore {
 /**
  * Combined database services interface
  */
+/** A persona as the persona list (0x607) carries it. */
+export type PersonaSummary = {
+    personaId: number;
+    customerId: number;
+    name: string;
+    shardId: number;
+    /** Seconds since the Unix epoch. */
+    createStamp: number;
+};
+
+/**
+ * Persona store interface - personas in PostgreSQL. Each is a profile row (the NPS record)
+ * and a player row (the game's data) sharing one id; a deleted persona is a Deleted Player.
+ */
+export interface IPersonaStore {
+    listPersonas(customerId: number): Promise<PersonaSummary[]>;
+
+    /** A live persona by its id; undefined when there is none or it was deleted. */
+    findPersona(personaId: number): Promise<PersonaSummary | undefined>;
+
+    /** Whether a live persona or a system player already has the name, ignoring case. */
+    isPersonaNameTaken(name: string): Promise<boolean>;
+}
+
 export interface IDatabaseServices {
     session: ISessionStore;
     gameData: IGameDataStore;
     auth: IAuthStore;
+    persona: IPersonaStore;
 }
 
 /**

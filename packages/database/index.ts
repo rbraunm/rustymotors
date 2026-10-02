@@ -3,6 +3,7 @@ export { createDatabaseServices, type DatabaseServicesConfig } from "./src/creat
 export { SessionStore } from "./src/stores/SessionStore.js";
 export { GameDataStore } from "./src/stores/GameDataStore.js";
 export { AuthStore } from "./src/stores/AuthStore.js";
+export { PersonaStore } from "./src/stores/PersonaStore.js";
 
 // Vehicle part cache utilities (used by transactions package)
 export { getVehiclePartTree, setVehiclePartTree, buildVehiclePartTreeFromDB, vehiclePartTreeToJSON } from "./src/cache.js";

@@ -18,6 +18,7 @@ import type { IDatabaseServices, ServerLogger } from "rusty-motors-shared";
 import { SessionStore } from "./stores/SessionStore.js";
 import { GameDataStore } from "./stores/GameDataStore.js";
 import { AuthStore } from "./stores/AuthStore.js";
+import { PersonaStore } from "./stores/PersonaStore.js";
 
 export interface DatabaseServicesConfig {
     postgresUrl: string;
@@ -43,5 +44,6 @@ export function createDatabaseServices(
         session: new SessionStore(),
         gameData: new GameDataStore(postgresUrl),
         auth: new AuthStore(sqlitePath, postgresUrl, logger),
+        persona: new PersonaStore(postgresUrl),
     };
 }

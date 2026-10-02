@@ -14,150 +14,64 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import type { ServerLogger, LegacyMessage } from 'rusty-motors-shared';
-import { BytableBuffer } from '@rustymotors/binary';
+import type { BytableBuffer } from "@rustymotors/binary";
 import {
-    PersonaList,
-    PersonaMapsMessage,
-} from './PersonaMapsMessage.js';
-import { PersonaRecord } from "./PersonaRecord.js";
-import { getServerLogger } from 'rusty-motors-shared';
-import { personaRecords } from '../shared/personaRecords.js';
+	databaseProvider,
+	getServerLogger,
+	type LegacyMessage,
+	type PersonaSummary,
+	type ServerLogger,
+} from "rusty-motors-shared";
+import { isRequestFromCustomer } from "./customerAccess.js";
+import { NpsBodyReader, lengthPrefixedString, npsReply, u32 } from "./npsWire.js";
+
+/** The most personas one account may have; the client reads it from the persona list. */
+export const maximumPersonasPerCustomer = 5;
+const personaMapsReply = 0x607;
+const invalidUserReply = 0x602;
 
 /**
- *
- * @param {number} customerId
-//  * @return {Promise<PersonaRecord[]>}
+ * The persona list body as the client reads it (NPSGetPersonaMaps, MCity_d.exe 0xAA7FF0): u16
+ * count; each record a u16 length, then u32 customer id, u32 GameUserId, u32 shard id, u32
+ * creation stamp, and the name; then a u8, the most personas the account may have.
  */
-async function getPersonasByCustomerId(
-    customerId: number,
-): Promise<
-    Pick<
-        PersonaRecord,
-        'customerId' | 'personaId' | 'personaName' | 'shardId'
-    >[]
-> {
-    const results = personaRecords.filter(
-        (persona) => persona.customerId === customerId,
-    );
-    return results;
+export function personaMapsBody(personas: PersonaSummary[]): Buffer {
+	const count = Buffer.alloc(2);
+	count.writeUInt16BE(personas.length, 0);
+	const records = personas.map((persona) => {
+		const fields = Buffer.concat([
+			u32(persona.customerId),
+			u32(persona.personaId),
+			u32(persona.shardId),
+			u32(persona.createStamp),
+			lengthPrefixedString(persona.name),
+		]);
+		const length = Buffer.alloc(2);
+		length.writeUInt16BE(fields.length, 0);
+		return Buffer.concat([length, fields]);
+	});
+	return Buffer.concat([count, ...records, Buffer.from([maximumPersonasPerCustomer])]);
 }
 
-/**
- * Lookup all personas owned by the customer id
- *
- * TODO: Store in a database, instead of being hard-coded
- *
- * @param {number} customerId
- * @return {Promise<PersonaRecord[]>}
- */
-async function getPersonaMapsByCustomerId(
-    customerId: number,
-): Promise<
-    Pick<
-        PersonaRecord,
-        'customerId' | 'personaId' | 'personaName' | 'shardId'
-    >[]
-> {
-    switch (customerId) {
-        case 5551212:
-            return getPersonasByCustomerId(customerId);
-        default:
-            return [];
-    }
-}
-
-/**
- * Handle a get persona maps packet
- * @param {object} args
- * @param {string} args.connectionId
- * @param {LegacyMessage} args.message
- * @param {ServerLogger} [args.log=getServerLogger({ name: "LoginServer" })]
- * @returns {Promise<{
- *  connectionId: string,
- * messages: BytableBuffer[],
- * }>}
- */
+/** Lists a customer's personas (0x532, body u32 customer id), answering 0x607. */
 export async function getPersonaMaps({
-    connectionId,
-    message,
-    log = getServerLogger('PersonaServer/_getPersonaMaps'),
+	connectionId,
+	message,
+	log = getServerLogger("PersonaServer/getPersonaMaps"),
 }: {
-    connectionId: string;
-    message: LegacyMessage;
-    log?: ServerLogger;
+	connectionId: string;
+	message: LegacyMessage;
+	log?: ServerLogger;
 }): Promise<{
-    connectionId: string;
-    messages: BytableBuffer[];
+	connectionId: string;
+	messages: BytableBuffer[];
 }> {
-    log.debug('_npsGetPersonaMaps...');
-
-    const requestPacket = message;
-    log.debug(
-        `NPSMsg request object from _npsGetPersonaMaps ${requestPacket
-            ._doSerialize()
-            .toString('hex')} `,
-    );
-
-    const customerId = requestPacket.data.readUInt32BE(8);
-
-    const personas = await getPersonaMapsByCustomerId(customerId);
-    log.debug(`${personas.length} personas found for ${customerId}`);
-
-    const personaMapsMessage = new PersonaMapsMessage();
-
-    // this is a GLDP_PersonaList::GLDP_PersonaList
-
-    try {
-        /** @type {PersonaList} */
-        const personaList: PersonaList = new PersonaList();
-
-        if (personas.length > 1) {
-            log.warn(
-                `More than one persona found for customer Id: ${customerId}`,
-            );
-        }
-
-        personas.forEach((persona) => {
-            const personaRecord = new PersonaRecord();
-
-            personaRecord.customerId = persona.customerId;
-            personaRecord.personaId = persona.personaId;
-            personaRecord.personaName = persona.personaName;
-            personaRecord.shardId = persona.shardId;
-            personaRecord.numberOfGames = personas.length;
-
-            personaList.addPersonaRecord(personaRecord);
-
-            log.debug(
-                `Persona record: ${JSON.stringify({
-                    personaRecord: personaRecord.toJSON(),
-                })}`,
-            );
-        });
-
-        personaMapsMessage._header.id = 0x607;
-        personaMapsMessage._personaRecords = personaList;
-        personaMapsMessage.setBuffer(personaList.serialize());
-        log.debug(
-            `PersonaMapsMessage object from _npsGetPersonaMaps',
-            ${JSON.stringify({
-                personaMapsMessage: personaMapsMessage
-                    .serialize()
-                    .toString('hex'),
-            })}`,
-        );
-
-        const outboundMessage = new BytableBuffer();
-        outboundMessage.deserialize(personaMapsMessage.serialize());
-
-        return {
-            connectionId,
-            messages: [outboundMessage],
-        };
-    } catch (error) {
-        const err = Error(`Error serializing personaMapsMsg`);
-        err.cause = error;
-        throw err;
-    }
+	const customerId = NpsBodyReader.of(message._doSerialize()).u32();
+	if (!isRequestFromCustomer(customerId)) {
+		log.warn(`Persona list for customer ${customerId} refused: not from the address that logged in as it`);
+		return { connectionId, messages: [npsReply(invalidUserReply)] };
+	}
+	const personas = await databaseProvider.getPersonaStore().listPersonas(customerId);
+	log.debug(`${personas.length} personas found for ${customerId}`);
+	return { connectionId, messages: [npsReply(personaMapsReply, personaMapsBody(personas))] };
 }

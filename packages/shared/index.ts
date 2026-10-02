@@ -9,6 +9,8 @@ export type {
     ISessionStore,
     IGameDataStore,
     IAuthStore,
+    IPersonaStore,
+    PersonaSummary,
     Player,
     PartEntry,
     VehicleRecord,

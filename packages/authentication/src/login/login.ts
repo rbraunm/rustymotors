@@ -1,3 +1,4 @@
+import { getLogContext } from "@rustymotors/logging";
 import { NetworkMessage, configurationProvider, databaseProvider } from "rusty-motors-shared";
 import { NPSUserStatus } from "./NPSUserStatus.js";
 import { type ServerLogger, getServerLogger } from "rusty-motors-shared";
@@ -52,6 +53,14 @@ export async function login({
 			`[${connectionId}] Unable to locate user record for contextId: ${contextId}`,
 		);
 	}
+
+	// The persona port's requests carry a customer id and nothing that proves it, so they are
+	// accepted only from the address that logged in as that customer.
+	const remoteAddress = getLogContext()?.remoteAddress;
+	if (typeof remoteAddress === "undefined") {
+		throw Error(`[${connectionId}] The login connection has no remote address`);
+	}
+	authStore.bindSessionAddress(contextId, remoteAddress);
 
 	// Save sessionkey in database under customerId
 	const sessionStore = databaseProvider.getSessionStore();

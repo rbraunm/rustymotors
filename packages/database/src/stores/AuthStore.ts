@@ -32,16 +32,19 @@ const SQL = {
         customerId INTEGER PRIMARY KEY NOT NULL
     ) STRICT`,
     CREATE_SESSION_TABLE: `
-        CREATE TABLE IF NOT EXISTS session(
+        CREATE TABLE session(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         contextId TEXT UNIQUE NOT NULL,
         customerId INTEGER NOT NULL,
-        profileId INTEGER DEFAULT 0
+        profileId INTEGER DEFAULT 0,
+        remoteAddress TEXT
     ) STRICT`,
     UPDATE_SESSION:
         "INSERT OR REPLACE INTO session (contextId, customerId, profileId) VALUES (?, ?, ?)",
     DELETE_CUSTOMER_SESSIONS: "DELETE FROM session WHERE customerId = ?",
     FIND_SESSION_BY_CONTEXT: "SELECT * FROM session WHERE contextId = ?",
+    BIND_SESSION_ADDRESS: "UPDATE session SET remoteAddress = ? WHERE contextId = ?",
+    FIND_SESSION_ADDRESS: "SELECT remoteAddress FROM session WHERE customerId = ? AND remoteAddress IS NOT NULL",
 } as const;
 
 type DBLogin = {
@@ -90,14 +93,13 @@ export class AuthStore implements IAuthStore {
         this.database.exec(
             "CREATE INDEX IF NOT EXISTS idx_user_customerId ON user(customerId)",
         );
+        // Tickets live until the next login or server start, so the session table is
+        // made new each start. That also ends the fixed demo tickets earlier releases kept.
+        this.database.exec("DROP TABLE IF EXISTS session");
         this.database.exec(SQL.CREATE_SESSION_TABLE);
         this.database.exec(
             "CREATE INDEX IF NOT EXISTS idx_session_customerId ON session(customerId)",
         );
-
-        // Tickets live until the next login or server start. This also ends the two
-        // fixed demo tickets earlier releases seeded into this file.
-        this.database.exec("DELETE FROM session");
         // The demo login is created once; a password changed later is kept.
         this.registerNewUser("admin", "admin", 654321);
         this.logger.info("Database initialized");
@@ -187,6 +189,20 @@ export class AuthStore implements IAuthStore {
             this.database.prepare(SQL.UPDATE_SESSION).run(contextId, customerId, 0);
         });
         replaceSessions();
+    }
+
+    bindSessionAddress(contextId: string, remoteAddress: string): void {
+        const result = this.database.prepare(SQL.BIND_SESSION_ADDRESS).run(remoteAddress, contextId);
+        if (result.changes !== 1) {
+            throw new Error(`No session holds the ticket the login presented`);
+        }
+    }
+
+    findSessionAddress(customerId: number): string | undefined {
+        const row = this.database.prepare(SQL.FIND_SESSION_ADDRESS).get(customerId) as
+            | { remoteAddress: string }
+            | undefined;
+        return row?.remoteAddress;
     }
 
     findCustomerByContext(contextId: string): UserRecordMini | undefined {

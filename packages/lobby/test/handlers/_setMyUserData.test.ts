@@ -26,6 +26,7 @@ describe("_setMyUserData", () => {
 			session: mockSessionStore as any,
 			gameData: {} as any,
 			auth: {} as any,
+			persona: {} as any,
 		});
 	});
 

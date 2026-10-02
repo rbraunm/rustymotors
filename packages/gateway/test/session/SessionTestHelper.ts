@@ -165,7 +165,14 @@ export class SessionTestHelper {
 					findCustomerByContext: () => ({ customerId: 1212555, contextId: "5213dee3a6bcdb133373b2d4f3b9962758", profileId: 1 }),
 					updateSession: () => {},
 					startSession: () => {},
+					bindSessionAddress: () => {},
+					findSessionAddress: () => undefined,
 					registerNewUser: () => {},
+				},
+				persona: {
+					listPersonas: async () => [],
+					findPersona: async () => undefined,
+					isPersonaNameTaken: async () => false,
 				},
 			});
 		}

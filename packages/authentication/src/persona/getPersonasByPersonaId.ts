@@ -1,23 +1,20 @@
-import { NoResultsError, type ServerLogger } from "rusty-motors-shared";
-import { personaRecords } from './personaRecords.js';
-import type { PersonaRecord } from "./PersonaMapsMessage.js";
+import { NoResultsError, databaseProvider, type ServerLogger } from "rusty-motors-shared";
 
+/** A live persona by its id (the client's GameUserId); deleted personas are not found. */
 export async function getPersonaByPersonaId({
 	personaId,
 }: {
-        personaId: number;
-        logger?: ServerLogger
-}): Promise<Pick<
-	PersonaRecord,
-	"customerId" | "personaId" | "personaName" | "shardId"
->> {
-	const result = personaRecords.find((persona) => {
-		const match = personaId === persona.personaId;
-		return match;
-	});
-	if (typeof result === "undefined") {
-		throw new NoResultsError(`Unable to locate a persona for id: ${personaId}`)
+	personaId: number;
+	logger?: ServerLogger;
+}): Promise<{ customerId: number; personaId: number; personaName: string; shardId: number }> {
+	const persona = await databaseProvider.getPersonaStore().findPersona(personaId);
+	if (typeof persona === "undefined") {
+		throw new NoResultsError(`Unable to locate a persona for id: ${personaId}`);
 	}
-
-	return result;
+	return {
+		customerId: persona.customerId,
+		personaId: persona.personaId,
+		personaName: persona.name,
+		shardId: persona.shardId,
+	};
 }
