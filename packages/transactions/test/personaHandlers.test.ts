@@ -204,7 +204,7 @@ describe("_getPlayerInfo", () => {
 		expect(data.readUInt16LE(57)).toBe(0x0102);
 		expect(data.subarray(59, 67).toString("latin1")).toBe("OUTATIM\u0000");
 		expect(data.readUInt32LE(67)).toBe(3);
-		expect(data.subarray(154, 167).toString("latin1")).toBe("Doc's friend\u0000");
+		expect(data.subarray(166, 179).toString("latin1")).toBe("Doc's friend\u0000");
 	});
 
 	it("refuses a player who is not a live persona", async () => {

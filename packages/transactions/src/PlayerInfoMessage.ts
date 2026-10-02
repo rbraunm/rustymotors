@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import { Timestamp } from "rusty-motors-shared";
-import { serializeStringRaw } from "rusty-motors-shared";
 import { BytableBuffer } from "@rustymotors/binary";
+import { SqlTimeStamp } from "rusty-motors-protocol";
 
 /**
  * A message listing the player's owned vehicles
@@ -57,9 +56,9 @@ export class PlayerInfoMessage extends BytableBuffer {
 	_numberOfInventoryIemsOnAuction: number; // 4 bytes
 	_highestBidInAuction: number; // 4 bytes
 	_currentClub: number; // 4 bytes
-	_dateLeftClub: Timestamp; // 4 bytes
+	_dateLeftClub: SqlTimeStamp; // 16 bytes
 	_canBeInvitedToClub: boolean; // 1 byte
-	_playerDescription: string; // 256 + 1 bytes
+	_playerDescription: string; // 257 bytes
 
 	constructor() {
 		super();
@@ -97,113 +96,79 @@ export class PlayerInfoMessage extends BytableBuffer {
 		this._numberOfInventoryIemsOnAuction = 0; // 4 bytes
 		this._highestBidInAuction = 0; // 4 bytes
 		this._currentClub = 0; // 4 bytes
-		this._dateLeftClub = new Timestamp(); // 4 bytes
+		this._dateLeftClub = new SqlTimeStamp(); // 16 bytes
 		this._canBeInvitedToClub = false; // 1 byte
-		this._playerDescription = ""; // 256 + 1 bytes
-		// total byes: 128 + 256 + 1 = 385
+		this._playerDescription = ""; // 257 bytes
 	}
 
+	// MCity_d.exe keeps the reply as its persona record: the profile reads the name at 6 and the
+	// description at 0xA6 (0x8B23E0), and appends the MC_PLAYER_PHYSICAL_INFO it fetches next at 0x1A7
+	// (0x97B7D0), so the reply is 423 bytes. Text is in the Windows ANSI code page.
 	override size() {
-		return 385;
+		return 423;
 	}
 
 	override serialize() {
-		const neededSize = this.size();
-		const buffer = Buffer.alloc(neededSize);
-		let offset = 0; // offset is 0
-		buffer.writeUInt16LE(this._msgNo, offset);
-		offset += 2; // offset is 2
-		buffer.writeUInt32LE(this._playerId, offset);
-		offset += 4; // offset is 6
-		serializeStringRaw(this._playerName.substring(0, 12), buffer, offset, 13);
-		offset += 13; // offset is 19
-		serializeStringRaw(
-			this._driversLicense.substring(0, 11),
-			buffer,
-			offset,
-			12,
-		);
-		offset += 12; // offset is 31
-		buffer.writeUInt8(this._driverClass, offset);
-		offset += 1; // offset is 32
-		buffer.writeUInt32LE(this._bankBalance, offset);
-		offset += 4; // offset is 36
-		buffer.writeUInt16LE(this._numberOfVehicles, offset);
-		offset += 2; // offset is 38
-		buffer.writeUInt8(this._isLoggedOn ? 1 : 0, offset);
-		offset += 1; // offset is 39
-		for (const car of this._carsList) {
-			buffer.write(car, offset);
-			serializeStringRaw(car, buffer, offset, 3);
-			offset += 3;
+		const buffer = Buffer.alloc(this.size());
+		let offset = 0;
+		const text = (value: string, fieldLength: number) => {
+			if (value.length >= fieldLength) {
+				throw new Error(`${JSON.stringify(value)} does not fit a ${fieldLength}-byte field with its NUL`);
+			}
+			buffer.write(value, offset, fieldLength, "latin1");
+			offset += fieldLength;
+		};
+		const u8 = (value: number) => {
+			offset = buffer.writeUInt8(value, offset);
+		};
+		const u16 = (value: number) => {
+			offset = buffer.writeUInt16LE(value, offset);
+		};
+		const u32 = (value: number) => {
+			offset = buffer.writeUInt32LE(value, offset);
+		};
+		u16(this._msgNo);
+		u32(this._playerId);
+		text(this._playerName, 13);
+		text(this._driversLicense, 12);
+		u8(this._driverClass);
+		u32(this._bankBalance);
+		u16(this._numberOfVehicles);
+		u8(this._isLoggedOn ? 1 : 0);
+		for (const carNumber of this._carsList) {
+			text(carNumber, 3);
 		}
-		buffer.writeUInt16LE(this._licensesPlateCode, offset);
-		offset += 2; // offset is 41
-		serializeStringRaw(
-			this._licensesPlateText.substring(0, 7),
-			buffer,
-			offset,
-			8,
-		);
-		offset += 8; // offset is 49
-		buffer.writeUInt32LE(this._carInfoSetttings, offset);
-		offset += 4; // offset is 53
-		buffer.writeUInt32LE(this._vehicleId, offset);
-		offset += 4; // offset is 57
-		buffer.writeUInt32LE(this._numberOfRacesEntered, offset);
-		offset += 4; // offset is 61
-		buffer.writeUInt32LE(this._numberOfRacesWon, offset);
-		offset += 4; // offset is 65
-		buffer.writeUInt32LE(this._numberOfRacesCompleted, offset);
-		offset += 4; // offset is 69
-		buffer.writeUInt32LE(this._totalWinings, offset);
-		offset += 4; // offset is 73
-		buffer.writeUInt16LE(this._insuranceRisk, offset);
-		offset += 2; // offset is 75
-		buffer.writeUInt32LE(this._insurancePoints, offset);
-		offset += 4; // offset is 79
-		buffer.writeUInt32LE(this._challengeRacesEntered, offset);
-		offset += 4; // offset is 83
-		buffer.writeUInt32LE(this._challengeRacesWon, offset);
-		offset += 4; // offset is 87
-		buffer.writeUInt32LE(this._challengeRacesCompleted, offset);
-		offset += 4; // offset is 91
-		buffer.writeUInt16LE(this._numberofCarsWon, offset);
-		offset += 2; // offset is 93
-		buffer.writeUInt16LE(this._numberOfCarsLost, offset);
-		offset += 2; // offset is 95
-		buffer.writeUInt32LE(this._points, offset);
-		offset += 4; // offset is 99
-		buffer.writeUInt32LE(this._currentLevel, offset);
-		offset += 4; // offset is 103
-		buffer.writeUInt32LE(this._currentRank, offset);
-		offset += 4; // offset is 107
-		buffer.writeUInt16LE(this._numberOfPointsToNextLevel, offset);
-		offset += 2; // offset is 109
-		buffer.writeUInt16LE(this._numberOfPointsToNextRank, offset);
-		offset += 2; // offset is 111
-		buffer.writeUInt32LE(this._maxInventorySlots, offset);
-		offset += 4; // offset is 115
-		buffer.writeUInt32LE(this._numberOfInventorySlotsUsed, offset);
-		offset += 4; // offset is 119
-		buffer.writeUInt32LE(this._numberOfInventoryIemsOnAuction, offset);
-		offset += 4; // offset is 123
-		buffer.writeUInt32LE(this._highestBidInAuction, offset);
-		offset += 4; // offset is 127
-		buffer.writeUInt32LE(this._currentClub, offset);
-		offset += 4; // offset is 131
-		const dateLeftClubBuffer = this._dateLeftClub.as64BitNumber();
-		buffer.writeUInt32LE(dateLeftClubBuffer, offset);
-		offset += 4; // offset is 135
-		buffer.writeUInt8(this._canBeInvitedToClub ? 1 : 0, offset);
-		offset += 1; // offset is 136
-		serializeStringRaw(
-			this._playerDescription.substring(0, 255),
-			buffer,
-			offset,
-			256,
-		);
-
+		u16(this._licensesPlateCode);
+		text(this._licensesPlateText, 8);
+		u32(this._carInfoSetttings);
+		u32(this._vehicleId);
+		u32(this._numberOfRacesEntered);
+		u32(this._numberOfRacesWon);
+		u32(this._numberOfRacesCompleted);
+		u32(this._totalWinings);
+		u16(this._insuranceRisk);
+		u32(this._insurancePoints);
+		u32(this._challengeRacesEntered);
+		u32(this._challengeRacesWon);
+		u32(this._challengeRacesCompleted);
+		u16(this._numberofCarsWon);
+		u16(this._numberOfCarsLost);
+		u32(this._points);
+		u32(this._currentLevel);
+		u32(this._currentRank);
+		u16(this._numberOfPointsToNextLevel);
+		u16(this._numberOfPointsToNextRank);
+		u32(this._maxInventorySlots);
+		u32(this._numberOfInventorySlotsUsed);
+		u32(this._numberOfInventoryIemsOnAuction);
+		u32(this._highestBidInAuction);
+		u32(this._currentClub);
+		offset += this._dateLeftClub.serialize().copy(buffer, offset);
+		u8(this._canBeInvitedToClub ? 1 : 0);
+		text(this._playerDescription, 257);
+		if (offset !== buffer.length) {
+			throw new Error(`PlayerInfoMessage filled ${offset} of its ${buffer.length} bytes`);
+		}
 		return buffer;
 	}
 
