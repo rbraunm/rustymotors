@@ -32,7 +32,6 @@ DATABASE_URL=postgresql://user:pass@localhost/dbname
 # Certificates (paths relative to project root or absolute)
 CERTIFICATE_FILE=data/mcouniverse.pem
 PRIVATE_KEY_FILE=data/private_key.pem
-PUBLIC_KEY_FILE=data/pub.key
 
 # Optional
 EXTERNAL_HOST=localhost

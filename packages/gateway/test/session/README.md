@@ -33,7 +33,6 @@ If you get errors about missing environment variables:
    - `DATABASE_URL` - Database connection string
    - `CERTIFICATE_FILE` - Path to certificate file
    - `PRIVATE_KEY_FILE` - Path to private key file
-   - `PUBLIC_KEY_FILE` - Path to public key file
 
 3. **Alternative**: Set environment variables directly:
    ```bash

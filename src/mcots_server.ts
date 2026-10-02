@@ -66,7 +66,6 @@ function main() {
             ...config,
             certificateFile: "[REDACTED]",
             privateKeyFile: "[REDACTED]",
-            publicKeyFile: "[REDACTED]",
         };
         coreLogger.debug(
             `Pre-flight checks passed. Starting server with config: ${JSON.stringify(sanitizedConfig)}`,

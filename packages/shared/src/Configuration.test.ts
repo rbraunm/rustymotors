@@ -24,7 +24,6 @@ describe("getServerConfiguration", () => {
 		process.env["EXTERNAL_HOST"] = "localhost";
 		process.env["CERTIFICATE_FILE"] = "/path/to/cert";
 		process.env["PRIVATE_KEY_FILE"] = "/path/to/privateKey";
-		process.env["PUBLIC_KEY_FILE"] = "/path/to/publicKey";
 		process.env["MCO_LOG_LEVEL"] = "info";
 
 		const config = getServerConfiguration();
@@ -32,7 +31,6 @@ describe("getServerConfiguration", () => {
 		expect(config.host).toBe("localhost");
 		expect(config.certificateFile).toBe("/path/to/cert");
 		expect(config.privateKeyFile).toBe("/path/to/privateKey");
-		expect(config.publicKeyFile).toBe("/path/to/publicKey");
 		expect(config.logLevel).toBe("info");
 	});
 
@@ -43,7 +41,6 @@ describe("getServerConfiguration", () => {
 		
 		process.env["CERTIFICATE_FILE"] = "/path/to/cert";
 		process.env["PRIVATE_KEY_FILE"] = "/path/to/privateKey";
-		process.env["PUBLIC_KEY_FILE"] = "/path/to/publicKey";
 
 		const config = getServerConfiguration();
 
@@ -55,7 +52,6 @@ describe("getServerConfiguration", () => {
 		// Explicitly unset required variables to test error handling
 		delete process.env["CERTIFICATE_FILE"];
 		delete process.env["PRIVATE_KEY_FILE"];
-		delete process.env["PUBLIC_KEY_FILE"];
 		
 		const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
 			throw new Error("process.exit called");

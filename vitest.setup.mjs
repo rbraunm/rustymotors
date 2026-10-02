@@ -102,9 +102,6 @@ if (!process.env.DATABASE_URL && !process.env.TEST_DATABASE_URL) {
 			if (!process.env.PRIVATE_KEY_FILE) {
 				process.env.PRIVATE_KEY_FILE = "data/private_key.pem";
 			}
-			if (!process.env.PUBLIC_KEY_FILE) {
-				process.env.PUBLIC_KEY_FILE = "data/pub.key";
-			}
 		} else {
 			console.warn(`Warning: .env file not found at ${envPath}`);
 			console.warn("Tests may fail if environment variables are required.");

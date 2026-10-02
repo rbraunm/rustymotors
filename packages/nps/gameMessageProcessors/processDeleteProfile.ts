@@ -6,7 +6,7 @@ import { getLenString } from "../src/utils/pureGet.js";
 import type { GameSocketCallback } from "./index.js";
 
 import type { UserStatus } from "../messageStructs/UserStatus.js";
-import { getServerLogger } from "rusty-motors-shared";
+import { configurationProvider, getServerLogger } from "rusty-motors-shared";
 
 const defaultLogger = getServerLogger("nps.processDeleteProfile");
 
@@ -52,8 +52,7 @@ export function unpackUserLoginMessage(message: GameMessage): {
 		.subarray(dataOffset + 2, dataOffset + 2 + nextDataLength)
 		.toString("utf8");
 
-	// Load the private key
-	const privateKey = loadPrivateKey("./data/private_key.pem");
+	const privateKey = loadPrivateKey(configurationProvider.getSharedConfiguration().privateKeyFile);
 
 	// Decrypt the session key
 	const sessionKey = decryptSessionKey(encryptedSessionKey, privateKey);

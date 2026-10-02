@@ -27,7 +27,6 @@ describe("GatewayConfiguration", () => {
 			host: "test.example.com",
 			certificateFile: "/path/to/cert.pem",
 			privateKeyFile: "/path/to/key.pem",
-			publicKeyFile: "/path/to/pub.pem",
 			logLevel: "debug",
 		};
 	});

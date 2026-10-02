@@ -9,7 +9,6 @@ import { getServerLogger } from "../getServerLogger.js";
 export class Configuration {
 	certificateFile!: string;
 	privateKeyFile!: string;
-	publicKeyFile!: string;
 	host!: string;
 	logLevel!: string;
 	static instance: Configuration | undefined;
@@ -21,7 +20,6 @@ export class Configuration {
 	 * @param {string} params.host - The host address.
 	 * @param {string} params.certificateFile - The path to the certificate file.
 	 * @param {string} params.privateKeyFile - The path to the private key file.
-	 * @param {string} params.publicKeyFile - The path to the public key file.
 	 * @param {string} params.logLevel - The logging level.
 	 * @param {Logger} params.logger - The logger instance.
 	 */
@@ -29,14 +27,12 @@ export class Configuration {
 		host,
 		certificateFile,
 		privateKeyFile,
-		publicKeyFile,
 		logLevel,
 		logger,
 	}: {
 		host: string;
 		certificateFile: string;
 		privateKeyFile: string;
-		publicKeyFile: string;
 		logLevel: string;
 		logger: ServerLogger;
 	}) {
@@ -44,8 +40,6 @@ export class Configuration {
 			this.certificateFile = certificateFile;
 
 			this.privateKeyFile = privateKeyFile;
-
-			this.publicKeyFile = publicKeyFile;
 
 			this.host = host;
 
@@ -62,7 +56,6 @@ export class Configuration {
 	 * @param host - The host address.
 	 * @param certificateFile - The path to the certificate file.
 	 * @param privateKeyFile - The path to the private key file.
-	 * @param publicKeyFile - The path to the public key file.
 	 * @param logLevel - The logging level.
 	 * @param logger - The logger instance.
 	 * @returns A new Configuration instance.
@@ -71,14 +64,12 @@ export class Configuration {
 		host,
 		certificateFile,
 		privateKeyFile,
-		publicKeyFile,
 		logLevel,
 		logger,
 	}: {
 		host: string;
 		certificateFile: string;
 		privateKeyFile: string;
-		publicKeyFile: string;
 		logLevel: string;
 		logger: ServerLogger;
 	}): Configuration {
@@ -86,7 +77,6 @@ export class Configuration {
 			host,
 			certificateFile,
 			privateKeyFile,
-			publicKeyFile,
 			logLevel,
 			logger,
 		});
@@ -128,7 +118,6 @@ export function getServerConfiguration(): Configuration {
 		host: getEnvVariable("EXTERNAL_HOST", false, ""),
 		certificateFile: getEnvVariable("CERTIFICATE_FILE", true),
 		privateKeyFile: getEnvVariable("PRIVATE_KEY_FILE", true),
-		publicKeyFile: getEnvVariable("PUBLIC_KEY_FILE", true),
 		logLevel: getEnvVariable("MCO_LOG_LEVEL", false, "debug"),
 	};
 }

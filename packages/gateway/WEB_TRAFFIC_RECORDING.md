@@ -103,7 +103,6 @@ The following web endpoints are now recorded:
 - `/ShardList/` - Shard list generation
 - `/AuthLogin` - Authentication login
 - `/cert` - Certificate retrieval
-- `/key` - Key retrieval
 - `/registry` - Registry information
 - `/games/EA_Seattle/MotorCity/*` - Castanet endpoints
 - All other routes (404 responses)

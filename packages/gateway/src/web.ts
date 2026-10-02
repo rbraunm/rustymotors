@@ -20,7 +20,6 @@ import { CastanetResponse } from "./CastanetResponse.js";
 import { generateShardList } from "rusty-motors-shard";
 import {
 	handleGetCert,
-	handleGetKey,
 	handleGetRegistry,
 } from "rusty-motors-shard";
 import { getServerConfiguration, getServerLogger, type ServerLogger, databaseProvider } from "rusty-motors-shared";
@@ -95,12 +94,6 @@ export function initializeRouteHandlers(config?: GatewayConfiguration) {
 		return {
 			headers: { "Content-Type": "octet-stream", "Content-Disposition": "attachment; filename=server.crt" },
 			body: handleGetCert(getServerConfiguration()),
-		};
-	});
-	routeHandlers.set("/key", async () => {
-		return {
-			headers: { "Content-Type": "octet-stream", "Content-Disposition": "attachment; filename=pub.key" },
-			body: handleGetKey(getServerConfiguration()),
 		};
 	});
 	routeHandlers.set("/registry", async () => {
@@ -3543,7 +3536,6 @@ async function handleWebUrl(
  * - `/AuthLogin`: Calls `handleAuthLogin` to process authentication login.
  * - `/ShardList/`: Responds with a generated shard list based on server configuration.
  * - `/cert`: Responds with a certificate based on server configuration.
- * - `/key`: Responds with a key based on server configuration.
  * - `/registry`: Responds with registry information based on server configuration.
  * - Any other route: Responds with a 404 status code and "Not found" message.
  */

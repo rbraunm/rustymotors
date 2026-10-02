@@ -79,21 +79,3 @@ export function handleGetRegistry(config: Configuration): string {
 `;
 }
 
-/**
- *  Read TLS public key file to string
- * @param {TConfiguration} config
- * @return {string}
- */
-export function handleGetKey(config: Configuration): string {
-	if (config.publicKeyFile === undefined) {
-		throw Error("Public key file not defined");
-	}
-	try {
-		const key = readFileSync(config.publicKeyFile, "utf8");
-		return key;
-	} catch (error) {
-		const err = Error(`Error reading public key file: ${String(error)}`);
-		err.cause = error;
-		throw err;
-	}
-}
