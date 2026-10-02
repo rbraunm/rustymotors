@@ -34,6 +34,7 @@ import { _getPlayerRaceHistory } from '../_getPlayerRaceHistory.js';
 import { _getStockCarInfo } from '../_getStockCarInfo.js';
 import { _getTunables } from '../_getTunables.js';
 import { _logout } from '../_logout.js';
+import { _setPersonaDescription } from '../_setPersonaDescription.js';
 import { clientConnect } from '../clientConnect.js';
 import { getLobbies } from '../getLobbies.js';
 import { login } from '../login.js';
@@ -104,6 +105,12 @@ export function createTransactionsHandlerRegistry(): MessageHandlerRegistry<
         opCode: 106, // MC_LOGOUT
         name: 'MC_LOGOUT',
         handler: _logout,
+    });
+
+    registry.register({
+        opCode: 492, // MC_SET_PERSONA_DESCRIPTION
+        name: 'MC_SET_PERSONA_DESCRIPTION',
+        handler: _setPersonaDescription,
     });
 
     registry.register({
