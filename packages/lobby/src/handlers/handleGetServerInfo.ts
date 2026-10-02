@@ -1,5 +1,5 @@
 import { BytableMessage } from '@rustymotors/binary';
-import { getServerLogger, type ServerLogger, databaseProvider } from 'rusty-motors-shared';
+import { getGameRoomPorts, getServerLogger, type ServerLogger, databaseProvider } from 'rusty-motors-shared';
 import { chatChannelIds } from './channels.js';
 import { getExternalHost } from './externalHost.js';
 
@@ -47,8 +47,14 @@ export async function handleGetServerInfo({
                 );
             }
 
-            commPort = parseInt(`90${port}`);
-            commName = `MCC${commPort}\n`;
+            // Chat channel N is on the Nth port after the race server. Its name stays
+            // MCC90NN, whatever port it is on.
+            const channelPort = getGameRoomPorts()[cID];
+            if (channelPort === undefined) {
+                throw new Error(`No game room port for chat channel ${cID}`);
+            }
+            commPort = channelPort;
+            commName = `MCC90${port}\n`;
         } else if (cID === 10001) {
             commPort = parseInt('10001');
             commName = 'MC100';

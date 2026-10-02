@@ -150,3 +150,31 @@ export function getExternalWebOrigin(host: string): string {
 	}
 	return port === 80 ? `http://${host}` : `http://${host}:${port}`;
 }
+
+/** The race server at the base, then chat channels 1 to 20 at the ports after it. */
+const gameRoomPortCount = 21;
+/** Ports with fixed jobs, which the game room range must not overlap. */
+const fixedServerPorts = [3000, 6660, 7003, 8226, 8227, 8228, 10001, 43200, 43300, 43400, 53303];
+
+/**
+ * The game room ports the server listens on and tells clients to connect to:
+ * the race server at GAME_ROOM_PORT_BASE (default 9000, upstream's), then chat
+ * channels 1 to 20 on the ports after it. Clients learn every one of these from
+ * the server, so the range can move. Throws when the range runs past 65535 or
+ * overlaps one of the server's fixed ports.
+ */
+export function getGameRoomPorts(): number[] {
+	const baseText = getEnvVariable("GAME_ROOM_PORT_BASE", false, "9000");
+	const base = Number(baseText);
+	if (!/^[0-9]+$/.test(baseText) || base < 1 || base + gameRoomPortCount - 1 > 65535) {
+		throw new Error(
+			`GAME_ROOM_PORT_BASE must leave room for ${gameRoomPortCount} ports up to 65535, got '${baseText}'`,
+		);
+	}
+	const ports = Array.from({ length: gameRoomPortCount }, (_, index) => base + index);
+	const overlap = ports.find((port) => fixedServerPorts.includes(port));
+	if (overlap !== undefined) {
+		throw new Error(`GAME_ROOM_PORT_BASE ${base} puts game room port ${overlap} on one of the server's fixed ports`);
+	}
+	return ports;
+}

@@ -1,6 +1,7 @@
 import { BytableMessage } from "@rustymotors/binary";
 import {
     GameServerLaunchInfo,
+    getGameRoomPorts,
     getServerLogger,
     RawMessage,
     RunningServerInfo,
@@ -53,7 +54,11 @@ export async function handleStartGameServer({
         newServerInfo.riff = "RACE";
         newServerInfo.commId = commId;
         newServerInfo.ipAddress = getExternalHost();
-        newServerInfo.port = 9000;
+        const [raceServerPort] = getGameRoomPorts();
+        if (raceServerPort === undefined) {
+            throw new Error("No game room ports are configured");
+        }
+        newServerInfo.port = raceServerPort;
         newServerInfo.userId = 21;
         newServerInfo.numberOfPlayers = 1;
 

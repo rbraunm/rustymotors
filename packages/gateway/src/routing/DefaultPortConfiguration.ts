@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { getGameRoomPorts } from "rusty-motors-shared";
 import type { PortRouter } from "../types.js";
 import type { IPortRouterRegistry } from "./PortRouterRegistry.js";
 
@@ -21,7 +22,7 @@ import type { IPortRouterRegistry } from "./PortRouterRegistry.js";
  * Creates the default port configuration for the Gateway server
  *
  * This function registers all the standard ports used by the game server:
- * - NPS (Network Play System) ports: 8226, 8227, 8228, 7003, 9000-9020, 10001
+ * - NPS (Network Play System) ports: 8226, 8227, 8228, 7003, the game room ports (9000-9020 by default), 10001
  * - MCOTS (Motor City Online Transaction Server) port: 43300
  *
  * @param registry - The port router registry to register ports in
@@ -40,8 +41,10 @@ export function createDefaultPortConfiguration(
 	registry.registerPort(7003, npsRouter);
 	registry.registerPort(10001, npsRouter);
 
-	// NPS ports - range (9000-9020 inclusive)
-	registry.registerPortRange(9000, 9020, npsRouter);
+	// NPS ports - the game room range (GAME_ROOM_PORT_BASE and the 20 after it)
+	for (const port of getGameRoomPorts()) {
+		registry.registerPort(port, npsRouter);
+	}
 
 	// MCOTS port
 	registry.registerPort(43300, mcotsRouter);

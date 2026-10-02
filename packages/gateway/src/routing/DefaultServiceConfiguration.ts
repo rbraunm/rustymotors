@@ -25,13 +25,14 @@
 import { receiveLobbyData } from 'rusty-motors-lobby';
 import { receiveLoginData, receivePersonaData } from 'rusty-motors-authentication';
 import { receiveChatData } from 'rusty-motors-chat';
+import { getGameRoomPorts } from 'rusty-motors-shared';
 import type { IServiceRegistry } from './ServiceRegistry.js';
 
 /**
  * Creates the default NPS service configuration.
  *
  * This function registers all the standard NPS services:
- * - Lobby service (port 7003, 9000-9020, 10001)
+ * - Lobby service (port 7003, the game room ports (9000-9020 by default), 10001)
  * - Login service (port 8226)
  * - Persona service (port 8228)
  * - Chat service (port 8227)
@@ -43,11 +44,11 @@ export function createDefaultServiceConfiguration(
 ): void {
     // Lobby service handles multiple ports
     // Port 7003: Main lobby
-    // Ports 9000-9020: Room services
+    // Game room ports (GAME_ROOM_PORT_BASE and the 20 after it): Room services
     // Port 10001: Race services
     registry.register({
         name: 'lobby',
-        ports: [7003, ...Array.from({ length: 21 }, (_, i) => 9000 + i), 10001],
+        ports: [7003, ...getGameRoomPorts(), 10001],
         handler: receiveLobbyData,
     });
 
