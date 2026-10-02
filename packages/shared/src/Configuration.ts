@@ -132,3 +132,21 @@ export function getServerConfiguration(): Configuration {
 		logLevel: getEnvVariable("MCO_LOG_LEVEL", false, "debug"),
 	};
 }
+
+/**
+ * The origin clients use for this server's plain-HTTP endpoints (shard list,
+ * patch server, game URLs): http://<host>, plus :EXTERNAL_WEB_PORT when that is
+ * set to anything but 80. Throws when the host is empty or the port is not a
+ * valid TCP port, since any other answer would send clients to the wrong place.
+ */
+export function getExternalWebOrigin(host: string): string {
+	if (!host) {
+		throw new Error("EXTERNAL_HOST is not set; clients cannot be told where this server's web endpoints are");
+	}
+	const portText = getEnvVariable("EXTERNAL_WEB_PORT", false, "80");
+	const port = Number(portText);
+	if (!/^[0-9]+$/.test(portText) || port < 1 || port > 65535) {
+		throw new Error(`EXTERNAL_WEB_PORT must be a TCP port from 1 to 65535, got '${portText}'`);
+	}
+	return port === 80 ? `http://${host}` : `http://${host}:${port}`;
+}

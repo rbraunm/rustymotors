@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import { readFileSync } from "fs";
-import type { Configuration } from "rusty-motors-shared";
+import { type Configuration, getExternalWebOrigin } from "rusty-motors-shared";
 
 // This section of the server can not be encrypted. This is an intentional choice for compatibility
 // deepcode ignore HttpToHttps: This is intentional. See above note.
@@ -48,7 +48,8 @@ export function handleGetRegistry(config: Configuration): string {
 	const externalHost = config.host;
 	const patchHost = externalHost;
 	const authHost = externalHost;
-	const shardHost = externalHost;
+	const webOrigin = getExternalWebOrigin(externalHost);
+	const webPort = new URL(webOrigin).port || "80";
 	return `Windows Registry Editor Version 5.00
 
 [HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\EACom\\AuthAuth]
@@ -60,13 +61,13 @@ export function handleGetRegistry(config: Configuration): string {
 "UpdateInfoPatch"="games/EA_Seattle/MotorCity/UpdateInfo"
 "NPSPatch"="games/EA_Seattle/MotorCity/NPS"
 "PatchServerIP"="${patchHost}"
-"PatchServerPort"="80"
+"PatchServerPort"="${webPort}"
 "CreateAccount"="${authHost}/SubscribeEntry.jsp?prodID=REG-MCO"
 "Language"="English"
 
 [HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Electronic Arts\\Motor City\\1.0]
-"ShardUrl"="http://${shardHost}/ShardList/"
-"ShardUrlDev"="http://${shardHost}/ShardList/"
+"ShardUrl"="${webOrigin}/ShardList/"
+"ShardUrlDev"="${webOrigin}/ShardList/"
 
 [HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Electronic Arts\\Motor City\\AuthAuth]
 "AuthLoginBaseService"="AuthLogin"

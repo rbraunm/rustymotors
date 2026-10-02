@@ -2,7 +2,7 @@ import { OldServerMessage } from "rusty-motors-shared";
 import { GameUrl, GameUrlsMessage } from "./GameUrlsMessage.js";
 import { GenericRequestMessage } from "./GenericRequestMessage.js";
 import type { MessageHandlerArgs, MessageHandlerResult } from "./handlers.js";
-import { getServerLogger } from "rusty-motors-shared";
+import { configurationProvider, getExternalWebOrigin, getServerLogger } from "rusty-motors-shared";
 
 const defaultLogger = getServerLogger("handlers/_getGameUrls");
 
@@ -20,6 +20,7 @@ export async function _getGameUrls({
 
 	log.debug(`Received Message: ${getGameUrlsMessage.toString()}`);
 
+	const webOrigin = getExternalWebOrigin(configurationProvider.getSharedConfiguration().host);
 	const gameUrlsMessage = new GameUrlsMessage();
 	gameUrlsMessage._msgNo = 364;
 
@@ -27,7 +28,7 @@ export async function _getGameUrls({
 	for (let i = 0; i < 67; i++) {
 		const url = new GameUrl();
 		url._urlId = i;
-		url.urlRef = `http://rusty-motors.com/urls?id=${i}`;
+		url.urlRef = `${webOrigin}/urls?id=${i}`;
 		gameUrlsMessage.addURL(url);
 	}
 

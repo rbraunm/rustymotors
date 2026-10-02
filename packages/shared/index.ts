@@ -1,7 +1,7 @@
 import type { MessageQueue } from './src/MessageQueue.js';
 export { SubThread } from './src/SubThread.js';
 export { NetworkMessage } from './src/NetworkMessage.js';
-export { Configuration, getServerConfiguration } from './src/Configuration.js';
+export { Configuration, getExternalWebOrigin, getServerConfiguration } from './src/Configuration.js';
 export { configurationProvider, type GatewayConfigurationProvider } from './src/ConfigurationProvider.js';
 export { databaseProvider } from './src/database/DatabaseProvider.js';
 export type {
