@@ -30,6 +30,7 @@ import {
 import { OldServerMessage } from "rusty-motors-shared";
 import { type MessageHandlerResult, _MSG_STRING } from "./handlers.js";
 import { getTransactionsHandlerRegistry } from "./handlers/registry.js";
+import { GenericReplyMessage } from "./GenericReplyMessage.js";
 import {
 	ServerPacket,
 	type BufferSerializer,
@@ -60,6 +61,25 @@ export class UnsupportedMessageCodeError extends Error {
 		this.messageName = messageName;
 		this.connectionId = connectionId;
 	}
+}
+
+const MC_FAILED = 102;
+
+/**
+ * A generic MC_FAILED reply naming the request it answers, with the request's
+ * sequence number. Without any reply the client waits on the request forever
+ * (a "Please wait" dialog that never closes); with this one it takes its own
+ * failure path for that request instead.
+ */
+function failedReply(inboundMessage: MessageNode): MessageHandlerResult["messages"][number] {
+	const reply = new GenericReplyMessage();
+	reply.msgNo = MC_FAILED;
+	reply.msgReply = inboundMessage.getMessageId();
+	const responsePacket = new OldServerMessage();
+	responsePacket._header.sequence = inboundMessage.getSequence();
+	responsePacket._header.flags = 8;
+	responsePacket.setBuffer(reply.serialize());
+	return responsePacket;
 }
 
 /**
@@ -102,7 +122,12 @@ async function processInput({
 			const err = Error(`[${connectionId}] Error processing message ${error}`, {
 				cause: error,
 			});
-			throw err;
+			Sentry.captureException(err);
+			log.error(
+				`[${connectionId}] Handler for ${currentMessageNo} (${currentMessageString}) failed; answered with MC_FAILED`,
+				{ err },
+			);
+			return { connectionId, messages: [failedReply(inboundMessage)] };
 		}
 	}
 
@@ -132,8 +157,11 @@ async function processInput({
 				decryptedHex,
 			},
 		});
+		log.error(`${err.message}; answered with MC_FAILED`);
+		return { connectionId, messages: [failedReply(inboundMessage)] };
 	}
 
+	// Non-positive codes come from corrupt reads, not client requests: nothing to answer.
 	throw err;
 }
 
