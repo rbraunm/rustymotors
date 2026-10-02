@@ -1,13 +1,14 @@
 import { BytableMessage } from '@rustymotors/binary';
 import { ServerLogger } from '@rustymotors/logging';
 import { GameServerListMessage, GameServerInfo } from 'rusty-motors-shared';
+import { getExternalHost } from './externalHost.js';
 
 export function createGameServersListMessage(log: ServerLogger, connectionId: string) {
     const outgoingGameMessage = new GameServerListMessage();
 
     outgoingGameMessage.id = 0x402;
 
-    const gameServer1 = new GameServerInfo('RACE', '71.186.155.248');
+    const gameServer1 = new GameServerInfo('RACE', getExternalHost());
 
     outgoingGameMessage.add(gameServer1);
 

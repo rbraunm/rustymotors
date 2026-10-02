@@ -8,6 +8,7 @@ import {
     databaseProvider,
 } from "rusty-motors-shared";
 import { createUserJoinedChannelMessage } from "./createUserJoinedChannelMessage.js";
+import { getExternalHost } from "./externalHost.js";
 
 export async function handleStartGameServer({
     connectionId,
@@ -51,7 +52,7 @@ export async function handleStartGameServer({
         const newServerInfo = new RunningServerInfo();
         newServerInfo.riff = "RACE";
         newServerInfo.commId = commId;
-        newServerInfo.ipAddress = "71.186.155.248";
+        newServerInfo.ipAddress = getExternalHost();
         newServerInfo.port = 9000;
         newServerInfo.userId = 21;
         newServerInfo.numberOfPlayers = 1;

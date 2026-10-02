@@ -1,6 +1,7 @@
 import { BytableMessage } from '@rustymotors/binary';
 import { getServerLogger, type ServerLogger, databaseProvider } from 'rusty-motors-shared';
 import { chatChannelIds } from './channels.js';
+import { getExternalHost } from './externalHost.js';
 
 export async function handleGetServerInfo({
     connectionId,
@@ -36,7 +37,7 @@ export async function handleGetServerInfo({
 
         let commPort;
         let commName;
-        let commIp = '71.186.155.248';
+        let commIp = getExternalHost();
 
         if (cID > 0 && cID < 21) {
             const port = chatChannelIds[cID - 1];
