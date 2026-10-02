@@ -201,9 +201,10 @@ export async function receiveTransactionsData({
 	);
 
 	let decryptedMessage: MessageNode;
+	const isRequestEncrypted = inboundMessage.isPayloadEncrypted();
 
 	// Is the message encrypted?
-	if (inboundMessage.isPayloadEncrypted()) {
+	if (isRequestEncrypted) {
 		// Get the encryyption settings for this connection
 		const state = fetchStateFromDatabase();
 
@@ -255,6 +256,12 @@ export async function receiveTransactionsData({
 	response.messages.forEach((message) => {
 		const outboundMessage = new ServerPacket();
 		outboundMessage.deserialize(message.serialize());
+
+		// A request sent in the clear (the persona create dialog's, made before the persona exists)
+		// has no encryption settings behind it, so its reply goes in the clear too.
+		if (!isRequestEncrypted) {
+			outboundMessage.setPayloadEncryption(false);
+		}
 
 		if (outboundMessage.isPayloadEncrypted()) {
 			const state = fetchStateFromDatabase();
