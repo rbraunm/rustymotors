@@ -19,14 +19,13 @@ import {
 	databaseProvider,
 	getServerLogger,
 	isRequestFromCustomer,
+	maximumPersonasPerCustomer,
 	type LegacyMessage,
 	type PersonaSummary,
 	type ServerLogger,
 } from "rusty-motors-shared";
 import { NpsBodyReader, lengthPrefixedString, npsReply, u32 } from "./npsWire.js";
 
-/** The most personas one account may have; the client reads it from the persona list. */
-export const maximumPersonasPerCustomer = 5;
 const personaMapsReply = 0x607;
 const invalidUserReply = 0x602;
 

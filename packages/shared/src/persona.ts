@@ -7,6 +7,12 @@ import { databaseProvider } from "./database/DatabaseProvider.js";
  */
 export const starterCash = 10000;
 
+/**
+ * The most personas one account may have. The client reads it from the persona list and, per shard,
+ * from the shard list's MaxPersonasPerUser.
+ */
+export const maximumPersonasPerCustomer = 5;
+
 // The create dialog's license plate keeps at most 7 characters.
 export const plateTextMaximumLength = 7;
 const plateTextPattern = /^[\x21-\x7e]([\x20-\x7e]*[\x21-\x7e])?$/;

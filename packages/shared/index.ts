@@ -4,7 +4,13 @@ export { NetworkMessage } from './src/NetworkMessage.js';
 export { Configuration, getExternalWebOrigin, getGameRoomPorts, getServerConfiguration } from './src/Configuration.js';
 export { configurationProvider, type GatewayConfigurationProvider } from './src/ConfigurationProvider.js';
 export { databaseProvider } from './src/database/DatabaseProvider.js';
-export { isPlateTextWellFormed, isRequestFromCustomer, plateTextMaximumLength, starterCash } from './src/persona.js';
+export {
+    isPlateTextWellFormed,
+    isRequestFromCustomer,
+    maximumPersonasPerCustomer,
+    plateTextMaximumLength,
+    starterCash,
+} from './src/persona.js';
 export type {
     IDatabaseServices,
     ISessionStore,

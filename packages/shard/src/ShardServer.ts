@@ -1,3 +1,4 @@
+import { maximumPersonasPerCustomer } from "rusty-motors-shared";
 import { ShardEntry } from "./shard-entry.js";
 
 /**
@@ -27,7 +28,7 @@ export function generateShardList(
 		"",
 		"Group-1",
 		88,
-		2,
+		maximumPersonasPerCustomer,
 		shardHost,
 		diagnosticServerPort,
 	);
@@ -48,7 +49,7 @@ export function generateShardList(
 		"",
 		"Group-1",
 		88,
-		2,
+		maximumPersonasPerCustomer,
 		shardHost,
 		diagnosticServerPort,
 	);

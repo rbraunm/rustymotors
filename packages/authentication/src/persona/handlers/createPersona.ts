@@ -1,6 +1,12 @@
 import type { BytableBuffer } from "@rustymotors/binary";
-import { databaseProvider, getServerLogger, isRequestFromCustomer, type LegacyMessage, type ServerLogger } from "rusty-motors-shared";
-import { maximumPersonasPerCustomer } from "../getPersonaMaps.js";
+import {
+	databaseProvider,
+	getServerLogger,
+	isRequestFromCustomer,
+	maximumPersonasPerCustomer,
+	type LegacyMessage,
+	type ServerLogger,
+} from "rusty-motors-shared";
 import { NpsBodyReader, npsReply, u32 } from "../npsWire.js";
 import { gamePersonaRecord } from "../gamePersonaRecord.js";
 import { isPersonaNameWellFormed } from "./validatePersonaName.js";
