@@ -207,6 +207,17 @@ export class PersonaStore implements IPersonaStore {
         }
     }
 
+    async listPersonasOfLogins(loginNames: string[]): Promise<{ loginName: string; personaName: string }[]> {
+        const rows = (await this.pool.query(sql`
+            SELECT login.login_name, player.persona
+            FROM login
+            JOIN profile ON profile.customer_id = login.customer_id
+            JOIN player ON player.player_id = profile.profile_id
+            WHERE login.login_name = ANY(${loginNames}) AND player.player_type_id = ${playerType}
+            ORDER BY login.login_name, profile.create_stamp, profile.profile_id`)) as { login_name: string; persona: string }[];
+        return rows.map((row) => ({ loginName: row.login_name, personaName: row.persona }));
+    }
+
     async isPersonaNameTaken(name: string): Promise<boolean> {
         const rows = await this.pool.query(sql`
             SELECT 1 FROM player

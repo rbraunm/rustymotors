@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import { compareSync, hashSync } from "bcrypt";
+import { compare, compareSync, hash, hashSync } from "bcrypt";
 import Database from "better-sqlite3";
 import { type ConnectionPool, type ConnectionPoolConfig, sql } from "@databases/pg";
 import * as pg from "@databases/pg";
@@ -52,7 +52,10 @@ type DBLogin = {
     password: string;
     customer_id: number;
     login_level: number;
+    is_locked: boolean;
 };
+
+const passwordHashRounds = 10;
 
 /**
  * Auth store implementation - manages authentication and local session cache
@@ -150,7 +153,7 @@ export class AuthStore implements IAuthStore {
     async findUser(
         username: string,
         password: string,
-    ): Promise<{ customerId: number; userName: string; loginLevel: number }> {
+    ): Promise<{ customerId: number; userName: string; loginLevel: number; isLocked: boolean }> {
         const db = this.ensurePostgresPool();
         const userRecords = (await db.query(
             sql`SELECT * FROM login WHERE login_name = ${username}`,
@@ -171,7 +174,52 @@ export class AuthStore implements IAuthStore {
             customerId: user.customer_id,
             userName: user.login_name,
             loginLevel: user.login_level,
+            isLocked: user.is_locked,
         };
+    }
+
+    async createLogin(loginName: string, password: string): Promise<number | undefined> {
+        const passwordHash = await hash(password, passwordHashRounds);
+        const rows = (await this.ensurePostgresPool().query(sql`
+            INSERT INTO login (login_name, "password", customer_id)
+            VALUES (${loginName}, ${passwordHash}, nextval('customer_id_seq'))
+            ON CONFLICT DO NOTHING
+            RETURNING customer_id`)) as { customer_id: bigint }[];
+        return rows.length === 1 ? Number(rows[0]!.customer_id) : undefined;
+    }
+
+    async setLoginPassword(loginName: string, password: string): Promise<boolean> {
+        const passwordHash = await hash(password, passwordHashRounds);
+        const rows = await this.ensurePostgresPool().query(sql`
+            UPDATE login SET "password" = ${passwordHash} WHERE login_name = ${loginName} RETURNING login_name`);
+        return rows.length === 1;
+    }
+
+    async verifyLogin(loginName: string, password: string): Promise<string | undefined> {
+        const rows = (await this.ensurePostgresPool().query(sql`
+            SELECT login_name, "password" FROM login WHERE login_name = ${loginName}`)) as DBLogin[];
+        const login = rows[0];
+        if (typeof login === "undefined" || !(await compare(password, login.password))) {
+            return undefined;
+        }
+        return login.login_name;
+    }
+
+    async setLoginLocked(loginName: string, isLocked: boolean): Promise<boolean> {
+        const rows = await this.ensurePostgresPool().query(sql`
+            UPDATE login SET is_locked = ${isLocked} WHERE login_name = ${loginName} RETURNING login_name`);
+        return rows.length === 1;
+    }
+
+    async findLogins(loginNames: string[]): Promise<string[]> {
+        const rows = (await this.ensurePostgresPool().query(sql`
+            SELECT login_name FROM login WHERE login_name = ANY(${loginNames}) ORDER BY login_name`)) as DBLogin[];
+        return rows.map((row) => row.login_name);
+    }
+
+    async countLogins(): Promise<number> {
+        const rows = (await this.ensurePostgresPool().query(sql`SELECT count(*) AS logins FROM login`)) as { logins: bigint }[];
+        return Number(rows[0]!.logins);
     }
 
     updateSession(

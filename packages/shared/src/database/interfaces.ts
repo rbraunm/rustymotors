@@ -87,7 +87,7 @@ export interface IAuthStore {
     findUser(
         username: string,
         password: string,
-    ): Promise<{ customerId: number; userName: string; loginLevel: number }>;
+    ): Promise<{ customerId: number; userName: string; loginLevel: number; isLocked: boolean }>;
 
     findCustomerByContext(contextId: string): UserRecordMini | undefined;
 
@@ -111,6 +111,22 @@ export interface IAuthStore {
         password: string,
         customerId: number,
     ): void;
+
+    /** Makes a login with a new customer id; undefined when the name, ignoring case, is taken. */
+    createLogin(loginName: string, password: string): Promise<number | undefined>;
+
+    /** Sets a login's password; false when there is no such login. */
+    setLoginPassword(loginName: string, password: string): Promise<boolean>;
+
+    /** The login's own spelling when the password is right; undefined for a wrong name or password. */
+    verifyLogin(loginName: string, password: string): Promise<string | undefined>;
+
+    /** Locks or unlocks a login; a locked login cannot log in. False when there is no such login. */
+    setLoginLocked(loginName: string, isLocked: boolean): Promise<boolean>;
+
+    /** Which of the names are logins, and how many logins there are. */
+    findLogins(loginNames: string[]): Promise<string[]>;
+    countLogins(): Promise<number>;
 }
 
 /**
@@ -162,6 +178,9 @@ export interface IPersonaStore {
 
     /** Sets a live persona's description (MC_SET_PERSONA_DESCRIPTION); throws when there is no such live persona. */
     setDescription(personaId: number, description: string): Promise<void>;
+
+    /** The live personas of the given logins, by login name and persona name. */
+    listPersonasOfLogins(loginNames: string[]): Promise<{ loginName: string; personaName: string }[]>;
 }
 
 /** What MC_SET_OPTIONS sets: the license plate, the car info setting, and the six car numbers. */

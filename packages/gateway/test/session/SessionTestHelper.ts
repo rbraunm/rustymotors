@@ -160,13 +160,19 @@ export class SessionTestHelper {
 				},
 				auth: {
 					isDatabaseConnected: true,
-					findUser: async () => ({ customerId: 0, userName: "test", loginLevel: 0 }),
+					findUser: async () => ({ customerId: 0, userName: "test", loginLevel: 0, isLocked: false }),
 					findCustomerByContext: () => ({ customerId: 1212555, contextId: "5213dee3a6bcdb133373b2d4f3b9962758", profileId: 1 }),
 					updateSession: () => {},
 					startSession: () => {},
 					bindSessionAddress: () => {},
 					findSessionAddress: () => undefined,
 					registerNewUser: () => {},
+					createLogin: async () => undefined,
+					setLoginPassword: async () => false,
+					verifyLogin: async () => undefined,
+					setLoginLocked: async () => false,
+					findLogins: async () => [],
+					countLogins: async () => 0,
 				},
 				persona: {
 					listPersonas: async () => [],
@@ -178,6 +184,7 @@ export class SessionTestHelper {
 					setOptions: async () => {},
 					setPhysical: async () => {},
 					setDescription: async () => {},
+					listPersonasOfLogins: async () => [],
 				},
 			});
 		}

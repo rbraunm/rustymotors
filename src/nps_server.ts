@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import * as Sentry from '@sentry/node';
-import { Gateway, initializeServiceRegistry } from 'rusty-motors-gateway';
+import { Gateway, initializeServiceRegistry, readAccountServiceSettings, startAccountService } from 'rusty-motors-gateway';
 import {
     getServerLogger,
     verifyLegacyCipherSupport,
@@ -93,6 +93,16 @@ function main() {
 
         coreLogger.info('Starting server');
         gatewayServer.start();
+
+        // ammolite's account service: the link script writes its settings file; without one the
+        // server is not linked to the portal.
+        const accountServiceSettingsPath = process.env['ACCOUNT_SERVICE_SETTINGS'];
+        const accountServiceSettings = accountServiceSettingsPath ? readAccountServiceSettings(accountServiceSettingsPath) : undefined;
+        if (accountServiceSettings) {
+            startAccountService(accountServiceSettings, getServerLogger('accountService'));
+        } else {
+            coreLogger.info(`Account service off: ${accountServiceSettingsPath ? `${accountServiceSettingsPath} does not exist` : 'ACCOUNT_SERVICE_SETTINGS is not set'}`);
+        }
     } catch (err) {
         return captureAndLogErrorAndSetNotZeroExitCode(err, coreLogger);
     }

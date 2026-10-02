@@ -237,7 +237,9 @@ async function handleAuthLogin(
 		// User not found or invalid password
 	}
 
-	if (user !== null) {
+	if (user !== null && user.isLocked) {
+		authResponse = AuthLoginResponse.createInvalid("INV-100", "This login is locked.", "https://winehq.com");
+	} else if (user !== null) {
 		// 34 hex characters, the length of the client's own tickets.
 		const ticket = randomBytes(17).toString("hex");
 		databaseProvider.getAuthStore().startSession(user.customerId, ticket);
