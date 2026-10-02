@@ -173,6 +173,8 @@ export class SessionTestHelper {
 					listPersonas: async () => [],
 					findPersona: async () => undefined,
 					isPersonaNameTaken: async () => false,
+					createPersona: async () => undefined,
+					deletePersona: async () => false,
 				},
 			});
 		}

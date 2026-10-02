@@ -76,6 +76,14 @@ export class NpsBodyReader {
 		return this.take(4).readUInt32BE(0);
 	}
 
+	u16(): number {
+		return this.take(2).readUInt16BE(0);
+	}
+
+	u8(): number {
+		return this.take(1).readUInt8(0);
+	}
+
 	lengthPrefixedString(maximumLength: number): string {
 		const length = this.take(2).readUInt16BE(0);
 		if (length > maximumLength) {

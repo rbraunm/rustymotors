@@ -36,6 +36,9 @@ import { getPersonaInfo } from '../persona/handlers/getPersonaInfo.js';
 import { validatePersonaName } from '../persona/handlers/validatePersonaName.js';
 import { _getFirstBuddy } from '../persona/_getFirstBuddy.js';
 import { getPersonaMaps } from '../persona/getPersonaMaps.js';
+import { checkToken } from '../persona/handlers/checkToken.js';
+import { createPersona } from '../persona/handlers/createPersona.js';
+import { deletePersona } from '../persona/handlers/deletePersona.js';
 
 /**
  * Handler arguments type for authentication handlers.
@@ -101,6 +104,24 @@ export function createAuthHandlerRegistry(): MessageHandlerRegistry<
         opCode: AUTH_MESSAGE_IDS.VALIDATE_PERSONA_NAME,
         name: 'Validate persona name',
         handler: validatePersonaName,
+    });
+
+    registry.register({
+        opCode: AUTH_MESSAGE_IDS.CHECK_TOKEN,
+        name: 'Check token',
+        handler: checkToken,
+    });
+
+    registry.register({
+        opCode: AUTH_MESSAGE_IDS.CREATE_PERSONA,
+        name: 'Create persona',
+        handler: createPersona,
+    });
+
+    registry.register({
+        opCode: AUTH_MESSAGE_IDS.DELETE_PERSONA,
+        name: 'Delete persona',
+        handler: deletePersona,
     });
 
     registry.register({

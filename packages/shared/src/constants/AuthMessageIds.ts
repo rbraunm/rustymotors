@@ -37,6 +37,15 @@ export const AUTH_MESSAGE_IDS = {
 	/** Validate persona name */
 	VALIDATE_PERSONA_NAME: 0x533, // 1331
 
+	/** Create a persona (NPSCreateGamePersona) */
+	CREATE_PERSONA: 0x507, // 1287
+
+	/** Delete a persona (NPSDeleteGamePersona) */
+	DELETE_PERSONA: 0x512, // 1298
+
+	/** Check a text token such as a license plate (NPSCheckToken) */
+	CHECK_TOKEN: 0x534, // 1332
+
 	// ============================================
 	// Response messages
 	// ============================================

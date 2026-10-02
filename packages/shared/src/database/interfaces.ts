@@ -140,6 +140,18 @@ export interface IPersonaStore {
 
     /** Whether a live persona or a system player already has the name, ignoring case. */
     isPersonaNameTaken(name: string): Promise<boolean>;
+
+    /**
+     * Creates a persona: its profile row and player row, under a new id. Undefined when a live
+     * persona or system player took the name first.
+     */
+    createPersona(customerId: number, name: string, shardId: number): Promise<PersonaSummary | undefined>;
+
+    /**
+     * Deletes the customer's persona: its player becomes a Deleted Player, keeping its cars, and its
+     * name gets a random suffix so the name is free again. False when the customer has no such live persona.
+     */
+    deletePersona(customerId: number, personaId: number): Promise<boolean>;
 }
 
 export interface IDatabaseServices {
