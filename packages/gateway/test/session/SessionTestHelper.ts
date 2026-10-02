@@ -164,6 +164,7 @@ export class SessionTestHelper {
 					findUser: async () => ({ customerId: 0, userName: "test", loginLevel: 0 }),
 					findCustomerByContext: () => ({ customerId: 1212555, contextId: "5213dee3a6bcdb133373b2d4f3b9962758", profileId: 1 }),
 					updateSession: () => {},
+					startSession: () => {},
 					registerNewUser: () => {},
 				},
 			});

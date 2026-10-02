@@ -99,6 +99,9 @@ export interface IAuthStore {
         profileId: number,
     ): void;
 
+    /** Makes contextId the customer's only session, ending any earlier one. */
+    startSession(customerId: number, contextId: string): void;
+
     registerNewUser(
         username: string,
         password: string,

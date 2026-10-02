@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import { randomBytes } from "node:crypto";
 import type http from "node:http";
 import { CastanetResponse } from "./CastanetResponse.js";
 import { generateShardList } from "rusty-motors-shard";
@@ -237,10 +238,10 @@ async function handleAuthLogin(
 	}
 
 	if (user !== null) {
-		const ticket = generateTicket(user.customerId);
-		if (ticket !== "") {
-			authResponse = AuthLoginResponse.createValid(ticket);
-		}
+		// 34 hex characters, the length of the client's own tickets.
+		const ticket = randomBytes(17).toString("hex");
+		databaseProvider.getAuthStore().startSession(user.customerId, ticket);
+		authResponse = AuthLoginResponse.createValid(ticket);
 	}
 
 	return {
@@ -3579,28 +3580,4 @@ export async function processHttpRequest(
 
 
 
-const AuthTickets = [
-	{
-		ticket: "5213dee3a6bcdb133373b2d4f3b9962758",
-		customerId: 123456,
-	},
-	{
-		ticket: "d316cd2dd6bf870893dfbaaf17f965884e",
-		customerId: 654321,
-	},
-];
-
-/**
- * Generates a ticket for the given customer ID.
- *
- * @param customerId - The ID of the customer for whom the ticket is being generated.
- * @returns The ticket associated with the given customer ID, or an empty string if no ticket is found.
- */
-function generateTicket(customerId: number): string {
-	const ticket = AuthTickets.find((t) => t.customerId === customerId);
-	if (ticket) {
-		return ticket.ticket;
-	}
-	return "";
-}
 

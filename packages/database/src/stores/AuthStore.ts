@@ -40,6 +40,7 @@ const SQL = {
     ) STRICT`,
     UPDATE_SESSION:
         "INSERT OR REPLACE INTO session (contextId, customerId, profileId) VALUES (?, ?, ?)",
+    DELETE_CUSTOMER_SESSIONS: "DELETE FROM session WHERE customerId = ?",
     FIND_SESSION_BY_CONTEXT: "SELECT * FROM session WHERE contextId = ?",
 } as const;
 
@@ -94,10 +95,11 @@ export class AuthStore implements IAuthStore {
             "CREATE INDEX IF NOT EXISTS idx_session_customerId ON session(customerId)",
         );
 
-        // Register demo user and initial sessions
+        // Tickets live until the next login or server start. This also ends the two
+        // fixed demo tickets earlier releases seeded into this file.
+        this.database.exec("DELETE FROM session");
+        // The demo login is created once; a password changed later is kept.
         this.registerNewUser("admin", "admin", 654321);
-        this.updateSession(1212555, "5213dee3a6bcdb133373b2d4f3b9962758", 1);
-        this.updateSession(5551212, "d316cd2dd6bf870893dfbaaf17f965884e", 2);
         this.logger.info("Database initialized");
     }
 
@@ -130,7 +132,7 @@ export class AuthStore implements IAuthStore {
             db.query(sql`INSERT
                 INTO login (login_name, "password", customer_id)
                 VALUES (${username}, ${hashedPassword}, ${customerId})
-                ON CONFLICT (customer_id) DO UPDATE SET password = ${hashedPassword};`);
+                ON CONFLICT (customer_id) DO NOTHING;`);
         } catch (error) {
             if (
                 error instanceof Error &&
@@ -177,6 +179,14 @@ export class AuthStore implements IAuthStore {
     ): void {
         const insert = this.database.prepare(SQL.UPDATE_SESSION);
         insert.run(contextId, customerId, profileId);
+    }
+
+    startSession(customerId: number, contextId: string): void {
+        const replaceSessions = this.database.transaction(() => {
+            this.database.prepare(SQL.DELETE_CUSTOMER_SESSIONS).run(customerId);
+            this.database.prepare(SQL.UPDATE_SESSION).run(contextId, customerId, 0);
+        });
+        replaceSessions();
     }
 
     findCustomerByContext(contextId: string): UserRecordMini | undefined {
