@@ -23,6 +23,7 @@ import { _setOptions } from "../src/_setOptions.js";
 import { _setPersonaDescription } from "../src/_setPersonaDescription.js";
 import { _updatePlayerPhysical } from "../src/_updatePlayerPhysical.js";
 import { clientConnect } from "../src/clientConnect.js";
+import { login } from "../src/login.js";
 import type { MessageHandlerArgs, MessageHandlerResult } from "../src/handlers.js";
 
 const connectionId = "test:43300";
@@ -52,14 +53,14 @@ type Calls = {
 	purchases: { playerId: number; brandedPartId: number; skinId: number; price: number }[];
 };
 
-function registerStores(bankBalance = starterCash): Calls {
+function registerStores(bankBalance = starterCash, carsOwned = marty.carsOwned): Calls {
 	const calls: Calls = { options: [], physical: [], descriptions: [], purchases: [] };
 	const personas: PersonaSummary[] = [{ personaId, customerId, name: "Marty", shardId: 44, createStamp: 0x66000010 }];
 	databaseProvider.register({
 		auth: { findSessionAddress: (customer: number) => (customer === customerId ? loginAddress : undefined) },
 		persona: {
 			findPersona: async (id: number) => personas.find((persona) => persona.personaId === id),
-			findPlayer: async (id: number) => (id === personaId ? marty : undefined),
+			findPlayer: async (id: number) => (id === personaId ? { ...marty, carsOwned } : undefined),
 			setOptions: async (id: number, options: PersonaOptions) => {
 				calls.options.push({ personaId: id, options });
 			},
@@ -283,6 +284,36 @@ describe("_buyCarFromDealer", () => {
 		connectAsPersona(personaId);
 		await expect(reply(_buyCarFromDealer, purchaseRequest(999))).rejects.toThrow(/does not sell branded part 999/);
 		await expect(reply(_buyCarFromDealer, purchaseRequest(104, 77))).rejects.toThrow(/trade-ins/);
+		expect(calls.purchases).toEqual([]);
+	});
+});
+
+describe("login", () => {
+	function loginRequest(persona: number, dealerId: number, brandedPartId: number): OldServerMessage {
+		return request(Buffer.concat([
+			u16(105), u32(customerId), u32(persona), u32(dealerId), u32(brandedPartId), u32(41), fixed("Marty", 13), u32(0),
+		]));
+	}
+
+	it("buys the starter car the first login after creation names, at the starter dealer's price", async () => {
+		const calls = registerStores(starterCash, 0);
+		connectAsPersona(personaId);
+		const data = await reply(login, loginRequest(personaId, 8, 402));
+		expect(calls.purchases).toEqual([{ playerId: personaId, brandedPartId: 402, skinId: 41, price: 5995 }]);
+		expect(data.readUInt16LE(0)).toBe(213);
+	});
+
+	it("buys nothing for a persona that already owns a car", async () => {
+		const calls = registerStores(starterCash, 1);
+		connectAsPersona(personaId);
+		await reply(login, loginRequest(personaId, 8, 402));
+		expect(calls.purchases).toEqual([]);
+	});
+
+	it("refuses a login as another persona", async () => {
+		const calls = registerStores(starterCash, 0);
+		connectAsPersona(personaId);
+		await expect(reply(login, loginRequest(21, 8, 402))).rejects.toThrow(/persona 21 on persona 1000/);
 		expect(calls.purchases).toEqual([]);
 	});
 });

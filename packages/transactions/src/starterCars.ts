@@ -1,3 +1,5 @@
+import { databaseProvider } from "rusty-motors-shared";
+
 /** A stock car a dealer sells, at its price. */
 export type StockCarOffer = {
 	brandedPartId: number;
@@ -22,4 +24,30 @@ export function findStarterCar(dealerId: number, brandedPartId: number): StockCa
 		throw new Error(`Dealer ${dealerId} does not sell branded part ${brandedPartId}`);
 	}
 	return offer;
+}
+
+/**
+ * Buys the persona's starter car, which the MC_LOGIN after persona creation names (the create dialog's
+ * BUY IT NOW sends no purchase of its own): only while the persona owns no car, so a login that names
+ * it again buys nothing. The new car's id; undefined when the persona already has a car.
+ */
+export async function buyStarterCar(
+	personaId: number,
+	dealerId: number,
+	brandedPartId: number,
+	skinId: number,
+): Promise<number | undefined> {
+	const offer = findStarterCar(dealerId, brandedPartId);
+	const player = await databaseProvider.getPersonaStore().findPlayer(personaId);
+	if (typeof player === "undefined") {
+		throw new Error(`There is no live persona ${personaId} to buy a starter car`);
+	}
+	if (player.carsOwned > 0) {
+		return undefined;
+	}
+	const carId = await databaseProvider.getGameDataStore().purchaseStockCar(personaId, offer.brandedPartId, skinId, offer.price);
+	if (typeof carId === "undefined") {
+		throw new Error(`Persona ${personaId} cannot afford the starter car ${offer.brandedPartId} at ${offer.price}`);
+	}
+	return carId;
 }

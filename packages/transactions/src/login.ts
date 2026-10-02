@@ -7,6 +7,8 @@ import {
 	ServerPacket,
 } from "rusty-motors-protocol";
 import { getServerLogger } from "rusty-motors-shared";
+import { connectionPersonaId } from "./personaConnection.js";
+import { buyStarterCar } from "./starterCars.js";
 
 const defaultLogger = getServerLogger("handlers/login");
 
@@ -33,6 +35,14 @@ export async function login({
 	log.debug(
 		`[${connectionId}] Received LoginMessage: ${loginMessage.toString()}`,
 	);
+
+	const personaId = connectionPersonaId(connectionId);
+	if (loginMessage.personaId !== personaId) {
+		throw new Error(`MC_LOGIN as persona ${loginMessage.personaId} on persona ${personaId}'s connection`);
+	}
+	if (loginMessage.brandedPartId !== 0) {
+		await buyStarterCar(personaId, loginMessage.lotOwnerId, loginMessage.brandedPartId, loginMessage.skinId);
+	}
 
 	// Create new response packet
 	const response = new LoginCompletePayload();
