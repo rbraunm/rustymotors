@@ -197,6 +197,7 @@ export function _MSG_STRING(messageID: number): string {
 		{ id: 265, name: "MC_PLAYER_PHYSICAL_INFO" }, // 0x109
 		{ id: 363, name: "MC_GET_GAME_URLS" }, // 0x16b"}
 		{ id: 266, name: "MC_UPDATE_PLAYER_PHYSICAL" }, // 0x10a
+		{ id: 320, name: "MC_DELETE_PERSONA" }, // 0x140
 		{ id: 322, name: "MC_GET_ARCADE_CARS" }, // 0x142"}
 		{ id: 324, name: "MC_GET_LOBBIES" }, // 0x144
 		{ id: 325, name: "MC_LOBBIES" }, // 0x145

@@ -33,6 +33,7 @@ import { _getPlayerPhysical } from '../_getPlayerPhysical.js';
 import { _getPlayerRaceHistory } from '../_getPlayerRaceHistory.js';
 import { _getStockCarInfo } from '../_getStockCarInfo.js';
 import { _getTunables } from '../_getTunables.js';
+import { _deletePersona } from '../_deletePersona.js';
 import { _logout } from '../_logout.js';
 import { _setOptions } from '../_setOptions.js';
 import { _setPersonaDescription } from '../_setPersonaDescription.js';
@@ -113,6 +114,12 @@ export function createTransactionsHandlerRegistry(): MessageHandlerRegistry<
         opCode: 109, // MC_SET_OPTIONS
         name: 'MC_SET_OPTIONS',
         handler: _setOptions,
+    });
+
+    registry.register({
+        opCode: 320, // MC_DELETE_PERSONA
+        name: 'MC_DELETE_PERSONA',
+        handler: _deletePersona,
     });
 
     registry.register({

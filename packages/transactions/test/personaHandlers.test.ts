@@ -16,6 +16,7 @@ import {
 } from "rusty-motors-shared";
 import { loggerMock } from "rusty-motors-shared/test";
 import { _buyCarFromDealer } from "../src/_buyCarFromDealer.js";
+import { _deletePersona } from "../src/_deletePersona.js";
 import { _getPlayerInfo } from "../src/_getPlayerInfo.js";
 import { _getPlayerPhysical } from "../src/_getPlayerPhysical.js";
 import { _getStockCarInfo } from "../src/_getStockCarInfo.js";
@@ -53,13 +54,13 @@ type Calls = {
 	purchases: { playerId: number; brandedPartId: number; skinId: number; price: number }[];
 };
 
-function registerStores(bankBalance = starterCash, carsOwned = marty.carsOwned): Calls {
+function registerStores(bankBalance = starterCash, carsOwned = marty.carsOwned, isDeleted = false): Calls {
 	const calls: Calls = { options: [], physical: [], descriptions: [], purchases: [] };
 	const personas: PersonaSummary[] = [{ personaId, customerId, name: "Marty", shardId: 44, createStamp: 0x66000010 }];
 	databaseProvider.register({
 		auth: { findSessionAddress: (customer: number) => (customer === customerId ? loginAddress : undefined) },
 		persona: {
-			findPersona: async (id: number) => personas.find((persona) => persona.personaId === id),
+			findPersona: async (id: number) => (isDeleted ? undefined : personas.find((persona) => persona.personaId === id)),
 			findPlayer: async (id: number) => (id === personaId ? { ...marty, carsOwned } : undefined),
 			setOptions: async (id: number, options: PersonaOptions) => {
 				calls.options.push({ personaId: id, options });
@@ -315,5 +316,21 @@ describe("login", () => {
 		connectAsPersona(personaId);
 		await expect(reply(login, loginRequest(21, 8, 402))).rejects.toThrow(/persona 21 on persona 1000/);
 		expect(calls.purchases).toEqual([]);
+	});
+});
+
+describe("_deletePersona", () => {
+	it("answers MC_SUCCESS once the NPS delete has retired the connection's persona", async () => {
+		registerStores(starterCash, 1, true);
+		connectAsPersona(personaId);
+		const data = await reply(_deletePersona, request(Buffer.concat([u16(320), u32(personaId), u32(0)])));
+		expect([data.readUInt16LE(0), data.readUInt16LE(2)]).toEqual([101, 320]);
+	});
+
+	it("refuses a persona the NPS delete has not deleted, and another persona", async () => {
+		registerStores(starterCash, 1, false);
+		connectAsPersona(personaId);
+		await expect(reply(_deletePersona, request(Buffer.concat([u16(320), u32(personaId), u32(0)])))).rejects.toThrow(/has not deleted/);
+		await expect(reply(_deletePersona, request(Buffer.concat([u16(320), u32(21), u32(0)])))).rejects.toThrow(/persona 21 on persona 1000/);
 	});
 });
