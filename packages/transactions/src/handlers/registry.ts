@@ -35,6 +35,7 @@ import { _getStockCarInfo } from '../_getStockCarInfo.js';
 import { _getTunables } from '../_getTunables.js';
 import { _logout } from '../_logout.js';
 import { _setPersonaDescription } from '../_setPersonaDescription.js';
+import { _updatePlayerPhysical } from '../_updatePlayerPhysical.js';
 import { clientConnect } from '../clientConnect.js';
 import { getLobbies } from '../getLobbies.js';
 import { login } from '../login.js';
@@ -111,6 +112,12 @@ export function createTransactionsHandlerRegistry(): MessageHandlerRegistry<
         opCode: 492, // MC_SET_PERSONA_DESCRIPTION
         name: 'MC_SET_PERSONA_DESCRIPTION',
         handler: _setPersonaDescription,
+    });
+
+    registry.register({
+        opCode: 266, // MC_UPDATE_PLAYER_PHYSICAL
+        name: 'MC_UPDATE_PLAYER_PHYSICAL',
+        handler: _updatePlayerPhysical,
     });
 
     registry.register({
