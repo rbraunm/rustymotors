@@ -77,11 +77,11 @@ export function onSocketConnection({
         );
 
         // Get the local port and remote address
-        const { localPort, remoteAddress } = incomingSocket;
+        const { localPort, remoteAddress, remotePort } = incomingSocket;
 
         // If the local port or remote address is undefined, close and return
-        if (localPort === undefined || remoteAddress === undefined) {
-            log.error("localPort or remoteAddress is undefined. Closing socket.");
+        if (localPort === undefined || remoteAddress === undefined || remotePort === undefined) {
+            log.error("localPort, remoteAddress, or remotePort is undefined. Closing socket.");
             if (!incomingSocket.destroyed) {
                 incomingSocket.end();
             }
@@ -110,8 +110,10 @@ export function onSocketConnection({
 
         // Expand the ALS context now that we know the port/remoteAddress.
         // Already-bound listeners and any descendants of this frame will
-        // see the new fields on subsequent log calls.
-        setLogContext({ port: localPort, remoteAddress });
+        // see the new fields on subsequent log calls. remotePort is the
+        // client's own port, so a client-side trace of the same connection
+        // can be matched to these log lines exactly.
+        setLogContext({ port: localPort, remoteAddress, remotePort });
 
         log.info("Connection accepted");
 
