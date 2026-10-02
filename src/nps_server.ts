@@ -69,7 +69,6 @@ function main() {
         const config = getServerConfiguration();
         const sanitizedConfig = {
             ...config,
-            certificateFile: '[REDACTED]',
             privateKeyFile: '[REDACTED]',
         };
         coreLogger.debug(

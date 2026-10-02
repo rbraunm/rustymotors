@@ -195,7 +195,7 @@ This is a **composite TypeScript project** with project references. Each package
 1. Copy `.env.example` to `.env` and configure:
    - `EXTERNAL_HOST`: Server hostname/IP
    - `DATABASE_URL`: PostgreSQL connection string
-   - `CERTIFICATE_FILE`, `PRIVATE_KEY_FILE`: the TLS certificate and its private key, which also decrypts the login's session key
+   - `PRIVATE_KEY_FILE`: the login TLS certificate's private key, which decrypts the login's session key
    - `MCO_LOG_LEVEL`: Logging verbosity (debug, verbose, info, warn, error)
 
 2. Generate certificates: `npm run certs` (development only, RSA-1024 for Windows XP compatibility)

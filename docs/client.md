@@ -10,17 +10,11 @@ This currently has only been tested with the debug version of the client. If you
 
 ## Registry
 
--   Copy the mco.reg file from `https://<server>/registry`.
--   Double-click the registry file to import and overwrite the default registry settings for the client.
+-   No registry import: the fordite client tools (registryGuard) serve every key the client reads from `Ammolite\registry.ini` in the game folder, where the server is set.
 
 ### Client/Server Encryption Setup
 
--   No pub.key: the client encrypts its login's session key with the login server's TLS certificate key, after validating the certificate against the Windows certificate store (the fordite client tools, stabilityGuard `loginKeyFromCertificate`). The server decrypts it with `PRIVATE_KEY_FILE`, that certificate's private key, which must be RSA of at most 2048 bits.
--   Download the SSL cert from `http://<server>/cert` and add it to the Trusted Root Store.
-
-(_This can be done by opening a `Run... (Win+R) > MMC (Microsoft Management Console) > Add/Remove Snap-in > Available snap-ins, click Certificates > select Computer account and Local computer > double-click on Certificates > right-click on Trusted Root Certification Authorities Store > All tasks, select Import > Locate the cert.pem file > Finish`_)
-
-!! Please make sure to restart the browser afterwards !!
+-   No pub.key and no certificate import: the login certificate must come from a public CA, with an RSA key of at most 2048 bits. The client tools (stabilityGuard `loginKeyFromCertificate`) validate it against the Windows certificate store and encrypt the login's session key with its key; the server decrypts it with `PRIVATE_KEY_FILE`, the certificate's private key.
 
 ### Change the graphics settings
 

@@ -22,14 +22,12 @@ describe("getServerConfiguration", () => {
 
 	it("should return the correct configuration when all environment variables are set", () => {
 		process.env["EXTERNAL_HOST"] = "localhost";
-		process.env["CERTIFICATE_FILE"] = "/path/to/cert";
 		process.env["PRIVATE_KEY_FILE"] = "/path/to/privateKey";
 		process.env["MCO_LOG_LEVEL"] = "info";
 
 		const config = getServerConfiguration();
 
 		expect(config.host).toBe("localhost");
-		expect(config.certificateFile).toBe("/path/to/cert");
 		expect(config.privateKeyFile).toBe("/path/to/privateKey");
 		expect(config.logLevel).toBe("info");
 	});
@@ -39,7 +37,6 @@ describe("getServerConfiguration", () => {
 		delete process.env["EXTERNAL_HOST"];
 		delete process.env["MCO_LOG_LEVEL"];
 		
-		process.env["CERTIFICATE_FILE"] = "/path/to/cert";
 		process.env["PRIVATE_KEY_FILE"] = "/path/to/privateKey";
 
 		const config = getServerConfiguration();
@@ -50,7 +47,6 @@ describe("getServerConfiguration", () => {
 
 	it("should exit the process if required environment variables are missing", () => {
 		// Explicitly unset required variables to test error handling
-		delete process.env["CERTIFICATE_FILE"];
 		delete process.env["PRIVATE_KEY_FILE"];
 		
 		const mockExit = vi.spyOn(process, "exit").mockImplementation(() => {
@@ -60,7 +56,7 @@ describe("getServerConfiguration", () => {
 
 		expect(() => getServerConfiguration()).toThrow("process.exit called");
 		expect(mockLogger.error).toHaveBeenCalledWith(
-			"Missing required environment variable: CERTIFICATE_FILE",
+			"Missing required environment variable: PRIVATE_KEY_FILE",
 		);
 		expect(mockExit).toHaveBeenCalledWith(1);
 

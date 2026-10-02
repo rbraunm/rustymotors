@@ -7,7 +7,6 @@ import { getServerLogger } from "../getServerLogger.js";
  */
 
 export class Configuration {
-	certificateFile!: string;
 	privateKeyFile!: string;
 	host!: string;
 	logLevel!: string;
@@ -18,27 +17,22 @@ export class Configuration {
 	 *
 	 * @param {Object} params - The configuration parameters.
 	 * @param {string} params.host - The host address.
-	 * @param {string} params.certificateFile - The path to the certificate file.
 	 * @param {string} params.privateKeyFile - The path to the private key file.
 	 * @param {string} params.logLevel - The logging level.
 	 * @param {Logger} params.logger - The logger instance.
 	 */
 	constructor({
 		host,
-		certificateFile,
 		privateKeyFile,
 		logLevel,
 		logger,
 	}: {
 		host: string;
-		certificateFile: string;
 		privateKeyFile: string;
 		logLevel: string;
 		logger: ServerLogger;
 	}) {
 		try {
-			this.certificateFile = certificateFile;
-
 			this.privateKeyFile = privateKeyFile;
 
 			this.host = host;
@@ -54,7 +48,6 @@ export class Configuration {
 	 * Creates a new instance of the Configuration class.
 	 *
 	 * @param host - The host address.
-	 * @param certificateFile - The path to the certificate file.
 	 * @param privateKeyFile - The path to the private key file.
 	 * @param logLevel - The logging level.
 	 * @param logger - The logger instance.
@@ -62,20 +55,17 @@ export class Configuration {
 	 */
 	static newInstance({
 		host,
-		certificateFile,
 		privateKeyFile,
 		logLevel,
 		logger,
 	}: {
 		host: string;
-		certificateFile: string;
 		privateKeyFile: string;
 		logLevel: string;
 		logger: ServerLogger;
 	}): Configuration {
 		return new Configuration({
 			host,
-			certificateFile,
 			privateKeyFile,
 			logLevel,
 			logger,
@@ -116,7 +106,6 @@ function getEnvVariable(
 export function getServerConfiguration(): Configuration {
 	return {
 		host: getEnvVariable("EXTERNAL_HOST", false, ""),
-		certificateFile: getEnvVariable("CERTIFICATE_FILE", true),
 		privateKeyFile: getEnvVariable("PRIVATE_KEY_FILE", true),
 		logLevel: getEnvVariable("MCO_LOG_LEVEL", false, "debug"),
 	};

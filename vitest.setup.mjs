@@ -96,9 +96,6 @@ if (!process.env.DATABASE_URL && !process.env.TEST_DATABASE_URL) {
 		if (process.env.CI || !process.env.DATABASE_URL) {
 			console.log("ℹ️  .env file not found - using test defaults for CI");
 
-			if (!process.env.CERTIFICATE_FILE) {
-				process.env.CERTIFICATE_FILE = "data/mcouniverse.pem";
-			}
 			if (!process.env.PRIVATE_KEY_FILE) {
 				process.env.PRIVATE_KEY_FILE = "data/private_key.pem";
 			}

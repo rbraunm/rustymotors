@@ -31,12 +31,11 @@ If you get errors about missing environment variables:
 1. **Check .env file exists** at the project root (`/data/Code/server/.env`)
 2. **Required variables** typically include:
    - `DATABASE_URL` - Database connection string
-   - `CERTIFICATE_FILE` - Path to certificate file
    - `PRIVATE_KEY_FILE` - Path to private key file
 
 3. **Alternative**: Set environment variables directly:
    ```bash
-   DATABASE_URL=... CERTIFICATE_FILE=... npm test
+   DATABASE_URL=... PRIVATE_KEY_FILE=... npm test
    ```
 
 ## How It Works

@@ -102,8 +102,6 @@ The data is recorded as raw bytes, just like game protocol traffic. This means:
 The following web endpoints are now recorded:
 - `/ShardList/` - Shard list generation
 - `/AuthLogin` - Authentication login
-- `/cert` - Certificate retrieval
-- `/registry` - Registry information
 - `/games/EA_Seattle/MotorCity/*` - Castanet endpoints
 - All other routes (404 responses)
 

@@ -29,8 +29,7 @@ Your `.env` file at `/data/Code/server/.env` should include:
 # Database
 DATABASE_URL=postgresql://user:pass@localhost/dbname
 
-# Certificates (paths relative to project root or absolute)
-CERTIFICATE_FILE=data/mcouniverse.pem
+# The login TLS certificate's private key (path relative to project root or absolute)
 PRIVATE_KEY_FILE=data/private_key.pem
 
 # Optional
@@ -73,7 +72,7 @@ The `.env` file should be automatically loaded by Node, and legacy crypto suppor
 If `.env` file isn't working, set variables directly:
 
 ```bash
-DATABASE_URL=... CERTIFICATE_FILE=... npm test
+DATABASE_URL=... PRIVATE_KEY_FILE=... npm test
 ```
 
 ## Notes

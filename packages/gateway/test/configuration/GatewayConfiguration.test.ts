@@ -25,7 +25,6 @@ describe("GatewayConfiguration", () => {
 		// Mock shared Configuration object
 		mockSharedConfig = {
 			host: "test.example.com",
-			certificateFile: "/path/to/cert.pem",
 			privateKeyFile: "/path/to/key.pem",
 			logLevel: "debug",
 		};
@@ -234,7 +233,7 @@ describe("GatewayConfiguration", () => {
 			// Assert
 			expect(shared).toBe(mockSharedConfig);
 			expect(shared.host).toBe("test.example.com");
-			expect(shared.certificateFile).toBe("/path/to/cert.pem");
+			expect(shared.privateKeyFile).toBe("/path/to/key.pem");
 		});
 	});
 

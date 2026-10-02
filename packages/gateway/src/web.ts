@@ -18,10 +18,6 @@ import { randomBytes } from "node:crypto";
 import type http from "node:http";
 import { CastanetResponse } from "./CastanetResponse.js";
 import { generateShardList } from "rusty-motors-shard";
-import {
-	handleGetCert,
-	handleGetRegistry,
-} from "rusty-motors-shard";
 import { getServerConfiguration, getServerLogger, type ServerLogger, databaseProvider } from "rusty-motors-shared";
 import { createPartsCatalog } from "rusty-motors-database";
 import type { GatewayConfiguration } from "./configuration/GatewayConfiguration.js";
@@ -90,18 +86,6 @@ export function initializeRouteHandlers(config?: GatewayConfiguration) {
 	routeHandlers.set("/urls", handleWebUrl);
 	routeHandlers.set("/ShardList/", handleShardList);
 	routeHandlers.set("/ticker", handleTicker);
-	routeHandlers.set("/cert", async () => {
-		return {
-			headers: { "Content-Type": "octet-stream", "Content-Disposition": "attachment; filename=server.crt" },
-			body: handleGetCert(getServerConfiguration()),
-		};
-	});
-	routeHandlers.set("/registry", async () => {
-		return {
-			headers: { "Content-Type": "octet-stream", "Content-Disposition": "attachment; filename=server.reg" },
-			body: handleGetRegistry(getServerConfiguration()),
-		};
-	});
 	// Legacy parts catalog endpoint. The MCO client fetches the catalog
 	// over HTTP at /mco/local/58 (modern form, with ?apt=N query
 	// parameter) — the response body is the original tab-separated rows
@@ -3535,8 +3519,6 @@ async function handleWebUrl(
  * - `/games/EA_Seattle/MotorCity/UpdateInfo`, `/games/EA_Seattle/MotorCity/NPS`, `/games/EA_Seattle/MotorCity/MCO`: Responds with predefined Castanet response headers and body.
  * - `/AuthLogin`: Calls `handleAuthLogin` to process authentication login.
  * - `/ShardList/`: Responds with a generated shard list based on server configuration.
- * - `/cert`: Responds with a certificate based on server configuration.
- * - `/registry`: Responds with registry information based on server configuration.
  * - Any other route: Responds with a 404 status code and "Not found" message.
  */
 export async function processHttpRequest(
