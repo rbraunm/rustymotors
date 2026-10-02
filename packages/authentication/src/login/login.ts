@@ -123,11 +123,16 @@ export async function login({
 	const outboundMessage2 = new GamePacket();
 	outboundMessage2.deserialize(outboundMessage.serialize());
 
+	// NPSUserLogin (MCity_d.exe 0xABBD00) first waits up to 30 s for the login server's ACK,
+	// taking any one message as it, and only then reads the reply.
+	const acknowledgement = new GamePacket();
+	acknowledgement.deserialize(new NetworkMessage(0x207).serialize());
+
 
 	// Update the data buffer
 	const response = {
 		connectionId,
-		messages: [outboundMessage2],
+		messages: [acknowledgement, outboundMessage2],
 	};
 	log.debug(
 		`[${connectionId}] Leaving login with ${response.messages.length} messages`,
