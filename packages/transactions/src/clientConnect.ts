@@ -10,6 +10,7 @@ import {
 	fetchStateFromDatabase,
 	getEncryption,
 	databaseProvider,
+	isRequestFromCustomer,
 } from "rusty-motors-shared";
 import { OldServerMessage, getServerLogger } from "rusty-motors-shared";
 import { GenericReplyMessage } from "./GenericReplyMessage.js";
@@ -40,6 +41,15 @@ export async function clientConnect({
 		throw new TypeError(
 			`customerId is wrong type. Expected 'number', got ${typeof customerId}`,
 		);
+	}
+
+	const personaId = newMessage._personaId;
+	if (!isRequestFromCustomer(customerId)) {
+		throw new Error(`MCOTS connect as customer ${customerId} is not from the address that logged in as it`);
+	}
+	const persona = await databaseProvider.getPersonaStore().findPersona(personaId);
+	if (persona?.customerId !== customerId) {
+		throw new Error(`MCOTS connect as persona ${personaId}, which customer ${customerId} does not have`);
 	}
 
 	const state = fetchStateFromDatabase();
@@ -86,11 +96,7 @@ export async function clientConnect({
 
 	addSession(updatedState, session).save();
 
-	const personaId = newMessage._personaId;
-
-	const personaName = newMessage._personaName;
-
-	log.debug(`cust: ${customerId} ID: ${personaId} Name: ${personaName}`);
+	log.debug(`cust: ${customerId} ID: ${personaId}`);
 
 	// Create new response packet
 	const pReply = new GenericReplyMessage();

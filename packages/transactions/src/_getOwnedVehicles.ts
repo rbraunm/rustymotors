@@ -6,19 +6,6 @@ import { getServerLogger } from "rusty-motors-shared";
 
 const defaultLogger = getServerLogger("handlers/_getOwnedVehicles");
 
-const vehicleList: {
-	personId: number;
-	vehicleId: number;
-	brandedPartId: number;
-	skinId: number;
-}[] = [];
-
-
-
-export async function getVehicleById(vehicleId: number) {
-    return vehicleList.find((vehicle) => vehicle.vehicleId === vehicleId);
-}
-
 export async function _getOwnedVehicles({
     connectionId,
     packet,
@@ -51,13 +38,4 @@ export async function _getOwnedVehicles({
     responsePacket.setBuffer(ownedVehiclesMessage.serialize());
 
     return { connectionId, messages: [responsePacket] };
-}
-
-export function addVehicle(
-	personId: number,
-	vehicleId: number,
-	brandedPartId: number,
-	skinId: number,
-) {
-	vehicleList.push({ personId, vehicleId, brandedPartId, skinId });
 }

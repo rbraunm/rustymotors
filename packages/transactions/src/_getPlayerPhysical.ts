@@ -1,18 +1,11 @@
-import {
-	cloth_white,
-	cloth_yellow,
-	hair_red,
-	OldServerMessage,
-	skin_pale,
-} from "rusty-motors-shared";
+import { OldServerMessage, databaseProvider, getServerLogger } from "rusty-motors-shared";
 import { GenericRequestMessage } from "./GenericRequestMessage.js";
 import { PlayerPhysicalMessage } from "./PlayerPhysicalMessage.js";
 import type { MessageHandlerArgs, MessageHandlerResult } from "./handlers.js";
-import { getServerLogger } from "rusty-motors-shared";
 
 const defaultLogger = getServerLogger("handlers/_getPlayerPhysical");
 
-
+/** Handle MC_GET_PLAYER_PHYSICAL (264): a persona's look, answered with MC_PLAYER_PHYSICAL_INFO (265). */
 export async function _getPlayerPhysical({
 	connectionId,
 	packet,
@@ -20,33 +13,27 @@ export async function _getPlayerPhysical({
 }: MessageHandlerArgs): Promise<MessageHandlerResult> {
 	const getPlayerPhysicalMessage = new GenericRequestMessage();
 	getPlayerPhysicalMessage.deserialize(packet.data);
-
-	log.debug(
-		`[${connectionId}] Received GenericRequestMessage: ${getPlayerPhysicalMessage.toString()}`,
-	);
-
 	const playerId = getPlayerPhysicalMessage.data.readUInt32LE(0);
+
+	const player = await databaseProvider.getPersonaStore().findPlayer(playerId);
+	if (typeof player === "undefined") {
+		throw new Error(`MC_GET_PLAYER_PHYSICAL for player ${playerId}, who is not a live persona`);
+	}
 
 	const playerPhysicalMessage = new PlayerPhysicalMessage();
 	playerPhysicalMessage._msgNo = 265;
 	playerPhysicalMessage._playerId = playerId;
-	playerPhysicalMessage._bodytype = 5;
-	playerPhysicalMessage._hairColor = hair_red;
-	playerPhysicalMessage._skinColor = skin_pale;
-	playerPhysicalMessage._shirtColor = cloth_white;
-	playerPhysicalMessage._pantsColor = cloth_yellow;
+	playerPhysicalMessage._bodytype = player.physical.bodyType;
+	playerPhysicalMessage._hairColor = player.physical.hairColor;
+	playerPhysicalMessage._skinColor = player.physical.skinColor;
+	playerPhysicalMessage._shirtColor = player.physical.shirtColor;
+	playerPhysicalMessage._pantsColor = player.physical.pantsColor;
 
-	log.debug(
-		`[${connectionId}] Sending PlayerPhysicalMessage: ${playerPhysicalMessage.toString()}`,
-	);
+	log.debug(`[${connectionId}] Sending PlayerPhysicalMessage: ${playerPhysicalMessage.toString()}`);
 
 	const responsePacket = new OldServerMessage();
 	responsePacket._header.sequence = packet.sequenceNumber;
 	responsePacket._header.flags = 8;
-
 	responsePacket.setBuffer(playerPhysicalMessage.serialize());
-
-	log.debug(`[${connectionId}] Sending response: ${responsePacket.toString()}`);
-
 	return { connectionId, messages: [responsePacket] };
 }

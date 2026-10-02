@@ -16,8 +16,8 @@
 
 import { randomInt } from "node:crypto";
 import * as pg from "@databases/pg";
-import { type ConnectionPool, type ConnectionPoolConfig, sql } from "@databases/pg";
-import type { IPersonaStore, PersonaSummary } from "rusty-motors-shared";
+import { type ConnectionPool, type ConnectionPoolConfig, type SQLQuery, sql } from "@databases/pg";
+import { type IPersonaStore, type PersonaOptions, type PersonaPhysical, type PersonaPlayer, type PersonaSummary, starterCash } from "rusty-motors-shared";
 
 type createConnectionPool = (
     connectionConfig?: string | ConnectionPoolConfig | undefined,
@@ -25,10 +25,8 @@ type createConnectionPool = (
 
 const playerType = 3;
 const deletedPlayerType = 4;
-// What a new persona starts with until starting values are settled: the bank balance the player info
-// reply has always shown.
-const startingBankBalance = 50;
 const uniqueViolation = "23505";
+const carNumberCount = 6;
 
 type PersonaRow = {
     profile_id: number;
@@ -37,6 +35,51 @@ type PersonaRow = {
     shard_id: number;
     create_stamp: number;
 };
+
+type PlayerRow = {
+    player_id: number;
+    customer_id: number;
+    persona: string;
+    bank_balance: number;
+    cars_owned: number;
+    lp_code: number;
+    lp_text: string | null;
+    car_info_setting: number | null;
+    car_num1: string;
+    car_num2: string;
+    car_num3: string;
+    car_num4: string;
+    car_num5: string;
+    car_num6: string;
+    description: string;
+    body_type: number;
+    hair_color: number;
+    skin_color: number;
+    shirt_color: number;
+    pants_color: number;
+};
+
+function playerFromRow(row: PlayerRow): PersonaPlayer {
+    return {
+        personaId: row.player_id,
+        customerId: row.customer_id,
+        name: row.persona,
+        bankBalance: row.bank_balance,
+        carsOwned: row.cars_owned,
+        plateCode: row.lp_code,
+        plateText: row.lp_text ?? "",
+        carInfoSetting: row.car_info_setting ?? 0,
+        carNumbers: [row.car_num1, row.car_num2, row.car_num3, row.car_num4, row.car_num5, row.car_num6],
+        description: row.description,
+        physical: {
+            bodyType: row.body_type,
+            hairColor: row.hair_color,
+            skinColor: row.skin_color,
+            shirtColor: row.shirt_color,
+            pantsColor: row.pants_color,
+        },
+    };
+}
 
 function personaFromRow(row: PersonaRow): PersonaSummary {
     return {
@@ -89,7 +132,7 @@ export class PersonaStore implements IPersonaStore {
                 await transaction.query(sql`
                     INSERT INTO player (player_id, customer_id, player_type_id, bank_balance, num_cars_owned, driver_style, lp_code,
                         car_num1, car_num2, car_num3, car_num4, car_num5, car_num6, persona)
-                    VALUES (${id}, ${customerId}, ${playerType}, ${startingBankBalance}, 0, 0, 0, '', '', '', '', '', '', ${name})`);
+                    VALUES (${id}, ${customerId}, ${playerType}, ${starterCash}, 0, 0, 0, '', '', '', '', '', '', ${name})`);
                 return transaction.query(sql`
                     INSERT INTO profile (customer_id, profile_name, profile_id, shard_id)
                     VALUES (${customerId}, ${name}, ${id}, ${shardId})
@@ -118,6 +161,50 @@ export class PersonaStore implements IPersonaStore {
                 UPDATE profile SET profile_name = ${(deleted[0] as { persona: string }).persona} WHERE profile_id = ${personaId}`);
             return true;
         });
+    }
+
+    async findPlayer(personaId: number): Promise<PersonaPlayer | undefined> {
+        const rows = (await this.pool.query(sql`
+            SELECT player.player_id, player.customer_id, player.persona, player.bank_balance,
+                (SELECT count(*)::integer FROM vehicle JOIN part ON part.part_id = vehicle.vehicle_id
+                    WHERE part.owner_id = player.player_id) AS cars_owned,
+                player.lp_code, player.lp_text, player.car_info_setting, player.car_num1, player.car_num2,
+                player.car_num3, player.car_num4, player.car_num5, player.car_num6, player.description,
+                player.body_type, player.hair_color, player.skin_color, player.shirt_color, player.pants_color
+            FROM player
+            WHERE player.player_id = ${personaId} AND player.player_type_id = ${playerType}`)) as PlayerRow[];
+        return rows.map(playerFromRow)[0];
+    }
+
+    async setOptions(personaId: number, options: PersonaOptions): Promise<void> {
+        if (options.carNumbers.length !== carNumberCount) {
+            throw new Error(`Options carry ${options.carNumbers.length} car numbers, not ${carNumberCount}`);
+        }
+        const [carNumber1, carNumber2, carNumber3, carNumber4, carNumber5, carNumber6] = options.carNumbers;
+        await this.updateLivePersona(personaId, sql`
+            lp_code = ${options.plateCode}, lp_text = ${options.plateText}, car_info_setting = ${options.carInfoSetting},
+            car_num1 = ${carNumber1}, car_num2 = ${carNumber2}, car_num3 = ${carNumber3},
+            car_num4 = ${carNumber4}, car_num5 = ${carNumber5}, car_num6 = ${carNumber6}`);
+    }
+
+    async setPhysical(personaId: number, physical: PersonaPhysical): Promise<void> {
+        await this.updateLivePersona(personaId, sql`
+            body_type = ${physical.bodyType}, hair_color = ${physical.hairColor}, skin_color = ${physical.skinColor},
+            shirt_color = ${physical.shirtColor}, pants_color = ${physical.pantsColor}`);
+    }
+
+    async setDescription(personaId: number, description: string): Promise<void> {
+        await this.updateLivePersona(personaId, sql`description = ${description}`);
+    }
+
+    private async updateLivePersona(personaId: number, assignments: SQLQuery): Promise<void> {
+        const updated = await this.pool.query(sql`
+            UPDATE player SET ${assignments}
+            WHERE player_id = ${personaId} AND player_type_id = ${playerType}
+            RETURNING player_id`);
+        if (updated.length !== 1) {
+            throw new Error(`There is no live persona ${personaId} to update`);
+        }
     }
 
     async isPersonaNameTaken(name: string): Promise<boolean> {

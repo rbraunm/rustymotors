@@ -1,6 +1,5 @@
 import type { BytableBuffer } from "@rustymotors/binary";
-import { databaseProvider, getServerLogger, type LegacyMessage, type ServerLogger } from "rusty-motors-shared";
-import { isRequestFromCustomer } from "../customerAccess.js";
+import { databaseProvider, getServerLogger, isRequestFromCustomer, type LegacyMessage, type ServerLogger } from "rusty-motors-shared";
 import { NpsBodyReader, npsReply } from "../npsWire.js";
 
 // NPSDeleteGamePersona's replies (MCity_d.exe 0xAB3570): 0x60C deleted, 0x602 no such user.

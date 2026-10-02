@@ -18,11 +18,11 @@ import type { BytableBuffer } from "@rustymotors/binary";
 import {
 	databaseProvider,
 	getServerLogger,
+	isRequestFromCustomer,
 	type LegacyMessage,
 	type PersonaSummary,
 	type ServerLogger,
 } from "rusty-motors-shared";
-import { isRequestFromCustomer } from "./customerAccess.js";
 import { NpsBodyReader, lengthPrefixedString, npsReply, u32 } from "./npsWire.js";
 
 /** The most personas one account may have; the client reads it from the persona list. */

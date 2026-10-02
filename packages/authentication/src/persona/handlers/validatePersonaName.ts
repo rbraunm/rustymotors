@@ -1,6 +1,5 @@
 import type { BytableBuffer } from "@rustymotors/binary";
-import { databaseProvider, getServerLogger, type LegacyMessage, type ServerLogger } from "rusty-motors-shared";
-import { isRequestFromCustomer } from "../customerAccess.js";
+import { databaseProvider, getServerLogger, isRequestFromCustomer, type LegacyMessage, type ServerLogger } from "rusty-motors-shared";
 import { NpsBodyReader, npsReply } from "../npsWire.js";
 
 // NPSValidatePersonaName's replies (MCity_d.exe 0xAA4110): 0x601 or 0x207 is a usable name,

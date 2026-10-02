@@ -1,51 +1,39 @@
-import { OldServerMessage, getServerLogger } from "rusty-motors-shared";
-import { GenericReplyMessage } from "./GenericReplyMessage.js";
+import { databaseProvider, getServerLogger } from "rusty-motors-shared";
 import type { MessageHandlerArgs, MessageHandlerResult } from "./handlers.js";
+import { connectionPersonaId, successReply } from "./personaConnection.js";
 
 const defaultLogger = getServerLogger("handlers/_updatePlayerPhysical");
 
-/** msgNo, then player id, body type, and hair, skin, shirt, and pants colors: seven 4-byte fields after the 2-byte msgNo. */
-const requestByteLength = 2 + 7 * 4;
+// MC_UPDATE_PLAYER_PHYSICAL as MCity_d.exe builds it (0x97EBD0), little-endian: u16 msgNo, then
+// player id, body type, and hair, skin, shirt, and pants colors as 32-bit ARGB, the layout of
+// MC_PLAYER_PHYSICAL_INFO.
+const requestByteLength = 2 + 6 * 4;
 
 /**
- * Handle MC_UPDATE_PLAYER_PHYSICAL (266), sent with MC_SET_PERSONA_DESCRIPTION
- * when the player saves the Edit Persona dialog.
- *
- * Request body (little-endian): uint16 msgNo, uint32 playerId, uint32 bodyType,
- * then hair, skin, shirt, and pants colors as uint32 ARGB, the same layout as
- * PlayerPhysicalMessage. The client completes the save when the reply is a
- * generic MC_SUCCESS carrying the request's sequence number, and waits on
- * "Please wait" until one arrives.
- *
- * The appearance is not stored yet: personas are not in the player table, so
- * MC_GET_PLAYER_PHYSICAL still answers with its fixed colors.
+ * Handle MC_UPDATE_PLAYER_PHYSICAL (266), which persona creation and the Edit Persona dialog send for
+ * the connection's persona. The client waits on "Please wait" until the reply arrives.
  */
 export async function _updatePlayerPhysical({
 	connectionId,
 	packet,
 	log = defaultLogger,
 }: MessageHandlerArgs): Promise<MessageHandlerResult> {
-	if (packet.data.byteLength < requestByteLength) {
-		throw new Error(
-			`[${connectionId}] MC_UPDATE_PLAYER_PHYSICAL is ${packet.data.byteLength} bytes, expected at least ${requestByteLength}`,
-		);
+	const request = packet.data;
+	if (request.byteLength !== requestByteLength) {
+		throw new Error(`MC_UPDATE_PLAYER_PHYSICAL is ${request.byteLength} bytes, not ${requestByteLength}`);
 	}
-	const playerId = packet.data.readUInt32LE(2);
-	const bodyType = packet.data.readUInt32LE(6);
-	const colors = [10, 14, 18, 22].map((offset) =>
-		packet.data.readUInt32LE(offset).toString(16).padStart(8, "0"),
-	);
-	log.debug(
-		`[${connectionId}] Update player physical: player ${playerId} body ${bodyType} hair ${colors[0]} skin ${colors[1]} shirt ${colors[2]} pants ${colors[3]}`,
-	);
-
-	const reply = new GenericReplyMessage();
-	reply.msgNo = 101; // MC_SUCCESS
-	reply.msgReply = 266; // MC_UPDATE_PLAYER_PHYSICAL
-
-	const responsePacket = new OldServerMessage();
-	responsePacket._header.sequence = packet.sequenceNumber;
-	responsePacket._header.flags = 8;
-	responsePacket.setBuffer(reply.serialize());
-	return { connectionId, messages: [responsePacket] };
+	const personaId = connectionPersonaId(connectionId);
+	const playerId = request.readUInt32LE(2);
+	if (playerId !== personaId) {
+		throw new Error(`MC_UPDATE_PLAYER_PHYSICAL for player ${playerId} on persona ${personaId}'s connection`);
+	}
+	await databaseProvider.getPersonaStore().setPhysical(personaId, {
+		bodyType: request.readInt32LE(6),
+		hairColor: request.readInt32LE(10),
+		skinColor: request.readInt32LE(14),
+		shirtColor: request.readInt32LE(18),
+		pantsColor: request.readInt32LE(22),
+	});
+	log.info(`Set the look of persona ${personaId}`);
+	return { connectionId, messages: [successReply(packet)] };
 }

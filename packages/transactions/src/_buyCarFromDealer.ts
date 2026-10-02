@@ -1,93 +1,50 @@
-import { fetchStateFromDatabase, findSessionByConnectionId, OldServerMessage, databaseProvider } from "rusty-motors-shared";
-import type { MessageHandlerArgs, MessageHandlerResult } from './handlers.js';
+import { OldServerMessage, databaseProvider, getServerLogger } from "rusty-motors-shared";
 import { GenericReplyMessage } from "./GenericReplyMessage.js";
-import { addVehicle } from "./_getOwnedVehicles.js";
-
-import { getServerLogger } from "rusty-motors-shared";
-import { PurchaseStockCarMessage } from './PurchaseStockCarMessage.js';
+import { PurchaseStockCarMessage } from "./PurchaseStockCarMessage.js";
+import type { MessageHandlerArgs, MessageHandlerResult } from "./handlers.js";
+import { connectionPersonaId, failedReply } from "./personaConnection.js";
+import { findStarterCar } from "./starterCars.js";
 
 const defaultLogger = getServerLogger("handlers/_buyCarFromDealer");
 
+const MC_SUCCESS = 101;
+
 /**
- * @param {MessageHandlerArgs} args
- * @return {Promise<MessageHandlerResult>}
+ * Handle MC_PURCHASE_STOCK_CAR (142): the connection's persona buys a dealer's stock car at the
+ * dealer's price. The reply carries the new car's id; MC_FAILED when the bank cannot cover the price.
  */
 export async function _buyCarFromDealer({
 	connectionId,
 	packet,
 	log = defaultLogger,
 }: MessageHandlerArgs): Promise<MessageHandlerResult> {
-    const purchaseStockCarMessage = new PurchaseStockCarMessage();
-    purchaseStockCarMessage.deserialize(packet.serialize());
+	const request = new PurchaseStockCarMessage();
+	request.deserialize(packet.serialize());
+	if (request.tradeInCarId !== 0) {
+		throw new Error(`MC_PURCHASE_STOCK_CAR trades in car ${request.tradeInCarId}; trade-ins are not supported`);
+	}
+	const offer = findStarterCar(request.dealerId, request.brandedPardId);
+	const personaId = connectionPersonaId(connectionId);
 
-    log.debug(
-        `[${connectionId}] Received PurchaseStockCarMessage: ${purchaseStockCarMessage.toString()}`,
-    );
+	const carId = await databaseProvider
+		.getGameDataStore()
+		.purchaseStockCar(personaId, offer.brandedPartId, request.skinId, offer.price);
+	if (typeof carId === "undefined") {
+		log.info(`Persona ${personaId} cannot afford branded part ${offer.brandedPartId} at ${offer.price}`);
+		return { connectionId, messages: [failedReply(packet)] };
+	}
 
-    const session = findSessionByConnectionId(
-        fetchStateFromDatabase(),
-        connectionId,
-    );
-    if (!session) {
-        log.error(
-            'Session not found',
-            { connectionId }, 
-        );
-        throw new Error(`Session not found for connectionId: ${connectionId}`);
-    }
+	const reply = new GenericReplyMessage();
+	reply.msgNo = MC_SUCCESS;
+	reply.msgReply = 142;
+	reply.result.writeUInt32LE(MC_SUCCESS, 0);
+	const carIdBuffer = Buffer.alloc(4);
+	carIdBuffer.writeUInt32LE(carId, 0);
+	reply.setData(carIdBuffer);
 
-    // TODO: Implement car purchase logic here
-    // TODO: Get the new car ID from the database
-    const gameDataStore = databaseProvider.getGameDataStore();
-    const newCarId = await gameDataStore.purchaseCar(session.gameId, purchaseStockCarMessage.dealerId, purchaseStockCarMessage.brandedPardId, purchaseStockCarMessage.skinId, purchaseStockCarMessage.tradeInCarId)
-    .then((newCarId) => {
-        log.debug(
-            'Purchased car',
-            { connectionId }, 
-        );
-        return newCarId;
-    })
-    .catch((error) => {
-        log.error(
-            'Failed to purchase car',
-            { connectionId, error },
-            );
-        throw new Error('Failed to purchase car');
-    })
-
-    log.debug(
-        `[${connectionId}] Purchased car with ID: ${newCarId}`,
-    );
-
-    // For now, just add a new car to the player's inventory
-    addVehicle(
-        session.gameId,
-        1000,
-        purchaseStockCarMessage.brandedPardId,
-        purchaseStockCarMessage.skinId,
-    );
-
-    const replyPacket = new GenericReplyMessage();
-    replyPacket.msgNo = 103; // GenericReplyMessage
-    replyPacket.msgReply = 142; // PurchaseStockCarMessage
-    replyPacket.result.writeUInt32LE(101, 0); // MC_SUCCESS
-    const newCarIdBuffer = Buffer.alloc(4);
-    newCarIdBuffer.writeUInt32LE(newCarId, 0);
-    replyPacket.setData(newCarIdBuffer);
-
-    log.debug(
-        `[${connectionId}] Sending GenericReplyMessage: ${replyPacket.toString()}`,
-    );
-
-    const responsePacket = new OldServerMessage();
-    responsePacket._header.sequence = packet.sequenceNumber;
-    responsePacket._header.flags = 8;
-
-    responsePacket.setBuffer(replyPacket.serialize());
-
-    log.debug(
-        `[${connectionId}] Sending response packet: ${responsePacket.toHexString()}`,
-    );
-
-    return { connectionId, messages: [responsePacket] };
+	const responsePacket = new OldServerMessage();
+	responsePacket._header.sequence = packet.sequenceNumber;
+	responsePacket._header.flags = 8;
+	responsePacket.setBuffer(reply.serialize());
+	return { connectionId, messages: [responsePacket] };
 }

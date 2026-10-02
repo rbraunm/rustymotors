@@ -1,9 +1,9 @@
 import { runWithLogContext } from '@rustymotors/logging';
 import { afterEach, describe, expect, it } from 'vitest';
-import { databaseProvider, LegacyMessage, type IDatabaseServices, type PersonaSummary } from 'rusty-motors-shared';
+import { databaseProvider, isPlateTextWellFormed, LegacyMessage, type IDatabaseServices, type PersonaSummary } from 'rusty-motors-shared';
 import { loggerMock } from 'rusty-motors-shared/test';
 import { gamePersonaRecord } from '../src/persona/gamePersonaRecord.js';
-import { checkToken, isPlateTextWellFormed } from '../src/persona/handlers/checkToken.js';
+import { checkToken } from '../src/persona/handlers/checkToken.js';
 import { createPersona } from '../src/persona/handlers/createPersona.js';
 import { deletePersona } from '../src/persona/handlers/deletePersona.js';
 

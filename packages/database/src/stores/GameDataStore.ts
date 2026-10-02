@@ -28,6 +28,8 @@ import type {
 import { buildVehiclePartTree, saveVehicle, saveVehiclePartTree } from "../cache.js";
 
 const log = getServerLogger("GameDataStore");
+const vehicleAbstractPartType = 101;
+const playerType = 3;
 
 /**
  * PostgreSQL-backed game data store implementation
@@ -67,8 +69,12 @@ export class GameDataStore implements IGameDataStore {
                     scrap_value: z.number(),
                 }),
                 id: z.number(),
-                abstractPartType: z.object({
+                stockCar: z.object({
                     abstract_part_type_id: z.number(),
+                    is_skin_for_part: z.boolean(),
+                }),
+                playerBalance: z.object({
+                    bank_balance: z.number(),
                 }),
                 ptSkin: z.object({
                     skin_id: z.number(),
@@ -312,121 +318,48 @@ export class GameDataStore implements IGameDataStore {
         return rawVehicleRecord;
     }
 
-    async createNewCar(
-        brandedPartId: number,
-        skinId: number,
-        ownerId: number,
-    ): Promise<number> {
-        const { pool, sql } = await this.ensureConnection();
-
-        // Check if skin exists
-        const skinExists = await Sentry.startSpan(
-            {
-                name: "skinExists",
-                op: "db.query",
-                attributes: {
-                    db: "postgres",
-                },
-            },
-            async () => {
-                return pool.exists(sql.typeAlias("id")`
-                    SELECT 1 FROM pt_skin WHERE skin_id = ${skinId}
-                `);
-            },
-        );
-
-        if (!skinExists) {
-            log.error("skin does not exist");
-            throw new Error("skin does not exist");
-        }
-
-        // Check if branded part is a vehicle (abstract_part_type_id === 101)
-        const abstractPartTypeId = await Sentry.startSpan(
-            {
-                name: "GetAbstractPartTypeIDForBrandedPartID",
-                op: "db.query",
-                attributes: {
-                    db: "postgres",
-                },
-            },
-            async () => {
-                const result = (await pool.one(sql.typeAlias("abstractPartType")`
-                    SELECT pt.abstract_part_type_id
-                    FROM branded_part bp
-                    INNER JOIN part_type pt ON bp.part_type_id = pt.part_type_id
-                    WHERE bp.branded_part_id = ${brandedPartId}
-                `)) as { abstract_part_type_id: number };
-                return result.abstract_part_type_id;
-            },
-        );
-
-        if (abstractPartTypeId !== 101) {
-            log.error("branded part is not a vehicle", {
-                brandedPartId,
-                abstractPartTypeId,
-            });
-            throw new Error(
-                `branded part with id ${brandedPartId} and abstract part type id ${abstractPartTypeId} is not a vehicle`,
-            );
-        }
-
-        const vehicle = await buildVehiclePartTree({
-            brandedPartId,
-            skinId,
-            ownedLotId: 6,
-            ownerID: ownerId,
-            isStock: true,
-        });
-
-        log.verbose("vehicle", { vehicle });
-
-        await saveVehicle(vehicle);
-        await saveVehiclePartTree(vehicle);
-
-        return vehicle.vehicleId;
-    }
-
-    async purchaseCar(
+    async purchaseStockCar(
         playerId: number,
-        dealerId: number,
         brandedPartId: number,
         skinId: number,
-        tradeInCarId: number,
-    ): Promise<number> {
-        try {
-            log.verbose(
-                `Player ${playerId} is purchasing car from dealer ${dealerId} with branded part ${brandedPartId} and skin ${skinId} and trading in car ${tradeInCarId}`,
-            );
-
-            if (dealerId === 6) {
-                // This is a new stock car and likely does not exist in the server yet
-                // We need to create the car and add it to the player's lot
-                const newCarId = await this.createNewCar(
-                    brandedPartId,
-                    skinId,
-                    playerId,
-                );
-
-                log.verbose(`Player ${playerId} purchased car with ID ${newCarId}`);
-                return newCarId;
-            }
-
-            const parts = await buildVehiclePartTree({
-                brandedPartId,
-                skinId,
-                isStock: true,
-                ownedLotId: dealerId,
-                ownerID: playerId,
-            });
-
-            log.verbose(`Built vehicle part tree for player ${playerId}`, {
-                parts,
-            });
-
-            return 1000;
-        } catch (error) {
-            log.error(`Error purchasing car for player ${playerId}`, { error });
-            throw error;
+        price: number,
+    ): Promise<number | undefined> {
+        const { pool, sql } = await this.ensureConnection();
+        const stockCar = (await pool.one(sql.typeAlias("stockCar")`
+            SELECT pt.abstract_part_type_id,
+                EXISTS (SELECT 1 FROM pt_skin s WHERE s.skin_id = ${skinId} AND s.part_type_id = bp.part_type_id) AS is_skin_for_part
+            FROM branded_part bp
+            INNER JOIN part_type pt ON bp.part_type_id = pt.part_type_id
+            WHERE bp.branded_part_id = ${brandedPartId}
+        `)) as { abstract_part_type_id: number; is_skin_for_part: boolean };
+        if (stockCar.abstract_part_type_id !== vehicleAbstractPartType) {
+            throw new Error(`Branded part ${brandedPartId} is not a vehicle`);
         }
+        if (!stockCar.is_skin_for_part) {
+            throw new Error(`Skin ${skinId} is not a skin of branded part ${brandedPartId}`);
+        }
+        const vehicle = await buildVehiclePartTree({ brandedPartId, skinId, ownerID: playerId, isStock: true });
+        return pool.transaction(async (connection) => {
+            const player = (await connection.maybeOne(sql.typeAlias("playerBalance")`
+                SELECT bank_balance FROM player
+                WHERE player_id = ${playerId} AND player_type_id = ${playerType}
+                FOR UPDATE
+            `)) as { bank_balance: number } | null;
+            if (player === null) {
+                throw new Error(`There is no live persona ${playerId} to buy a car`);
+            }
+            if (player.bank_balance < price) {
+                return undefined;
+            }
+            await connection.query(sql.typeAlias("playerBalance")`
+                UPDATE player SET bank_balance = bank_balance - ${price}
+                WHERE player_id = ${playerId}
+                RETURNING bank_balance
+            `);
+            await saveVehicle(vehicle, connection);
+            await saveVehiclePartTree(vehicle, connection);
+            log.info(`Persona ${playerId} bought car ${vehicle.vehicleId} (branded part ${brandedPartId}) for ${price}`);
+            return vehicle.vehicleId;
+        });
     }
 }

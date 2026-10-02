@@ -2,6 +2,7 @@ import { getServerLogger, type ServerLogger } from "rusty-motors-shared";
 import type { TBrand } from "./models/Brand.js";
 import { getSlonik, getDatabase } from "./services/database.js";
 import * as Sentry from "@sentry/node";
+import type { CommonQueryMethods } from "slonik";
 import type { TPart } from "./models/Part.js";
 import { getDatabaseManager } from "./DatabaseManager.js";
 
@@ -151,6 +152,7 @@ export async function setVehiclePartTree(
 
 export async function saveVehicle(
     vehiclePartTree: VehiclePartTreeType,
+    connection: CommonQueryMethods,
 ): Promise<void> {
     const log = getServerLogger("database/saveVehicle")
     try {
@@ -169,7 +171,7 @@ export async function saveVehicle(
 
         log.debug(`Saving vehicle part: ${JSON.stringify(vehiclePart)}`,
             { vehicleId: vehiclePartTree.vehicleId });
-        await savePart(vehiclePart).catch((error) => {
+        await savePart(vehiclePart, connection).catch((error) => {
             log.error(`Error saving vehicle part: ${error}`);
             const e = new Error(`Error saving vehicle part: ${error}`);
             e.cause = error;
@@ -199,8 +201,8 @@ export async function saveVehicle(
                 },
             },
             async () => {
-                const { slonik, sql } = await getSlonik();
-                return slonik.query(sql.typeAlias('vehicle')`
+                const { sql } = await getSlonik();
+                return connection.query(sql.typeAlias('vehicle')`
             INSERT INTO vehicle (
                 vehicle_id,
                 skin_id,
@@ -233,6 +235,7 @@ export async function saveVehicle(
 
 export async function saveVehiclePartTree(
     vehiclePartTree: VehiclePartTreeType,
+    connection: CommonQueryMethods,
 ): Promise<void> {
     const log = getServerLogger("database/saveVehiclePartTree")
     try {
@@ -256,7 +259,7 @@ export async function saveVehiclePartTree(
                 log.error(`Part with partId ${partId} not found`);
                 throw new Error(`Part with partId ${partId} not found`);
             }
-            await savePart(part);
+            await savePart(part, connection);
         }
 
         // Save the vehicle part tree in the cache
@@ -435,7 +438,7 @@ export async function buildVehiclePartTreeFromDB(
     return vehiclePartTree;
 }
 
-export async function savePart(part: TPart): Promise<void> {
+export async function savePart(part: TPart, connection: CommonQueryMethods): Promise<void> {
     await Sentry.startSpan(
         {
             name: 'Save part',
@@ -446,8 +449,8 @@ export async function savePart(part: TPart): Promise<void> {
             },
         },
         async () => {
-            const { slonik, sql } = await getSlonik();
-            return slonik.query(sql.typeAlias('dbPart')`
+            const { sql } = await getSlonik();
+            return connection.query(sql.typeAlias('dbPart')`
         INSERT INTO part (
             part_id,
             parent_part_id,
@@ -681,5 +684,6 @@ export async function dbBuyNewPart(personiaId: number, brandedPartId: number, _d
     }
 
 
-    return savePart(newPart).then(() => newPartId)
+    const { slonik } = await getSlonik();
+    return savePart(newPart, slonik).then(() => newPartId)
 }

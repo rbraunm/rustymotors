@@ -1,18 +1,10 @@
 import type { BytableBuffer } from "@rustymotors/binary";
-import { getServerLogger, type LegacyMessage, type ServerLogger } from "rusty-motors-shared";
+import { getServerLogger, isPlateTextWellFormed, type LegacyMessage, type ServerLogger } from "rusty-motors-shared";
 import { NpsBodyReader, npsReply } from "../npsWire.js";
 
 // NPSCheckToken's replies (MCity_d.exe 0xAA5810): 0x207 is acceptable, 0x635 has invalid characters.
 const tokenAcceptedReply = 0x207;
 const invalidCharactersReply = 0x635;
-
-// The create dialog's license plate keeps at most 7 characters.
-export const plateTextMaximumLength = 7;
-const plateTextPattern = /^[\x21-\x7e]([\x20-\x7e]*[\x21-\x7e])?$/;
-
-export function isPlateTextWellFormed(text: string): boolean {
-	return text.length <= plateTextMaximumLength && plateTextPattern.test(text);
-}
 
 /**
  * Checks a text token, which the create dialog sends for the license plate (0x534; body u32 flags

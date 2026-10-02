@@ -64,19 +64,17 @@ export interface IGameDataStore {
 
     getVehicleAndParts(vehicleId: number): Promise<VehicleRecord | null>;
 
-    createNewCar(
-        brandedPartId: number,
-        skinId: number,
-        ownerId: number,
-    ): Promise<number>;
-
-    purchaseCar(
+    /**
+     * Buys a stock car for a live player: in one transaction, takes the price from the player's bank
+     * and gives the player the car, built from its stock assembly. The new car's id; undefined when
+     * the bank balance does not cover the price.
+     */
+    purchaseStockCar(
         playerId: number,
-        dealerId: number,
         brandedPartId: number,
         skinId: number,
-        tradeInCarId: number,
-    ): Promise<number>;
+        price: number,
+    ): Promise<number | undefined>;
 }
 
 /**
@@ -152,7 +150,48 @@ export interface IPersonaStore {
      * name gets a random suffix so the name is free again. False when the customer has no such live persona.
      */
     deletePersona(customerId: number, personaId: number): Promise<boolean>;
+
+    /** A live persona's game data; undefined when there is none or it was deleted. */
+    findPlayer(personaId: number): Promise<PersonaPlayer | undefined>;
+
+    /** Sets a live persona's options (MC_SET_OPTIONS); throws when there is no such live persona. */
+    setOptions(personaId: number, options: PersonaOptions): Promise<void>;
+
+    /** Sets a live persona's appearance (MC_UPDATE_PLAYER_PHYSICAL); throws when there is no such live persona. */
+    setPhysical(personaId: number, physical: PersonaPhysical): Promise<void>;
+
+    /** Sets a live persona's description (MC_SET_PERSONA_DESCRIPTION); throws when there is no such live persona. */
+    setDescription(personaId: number, description: string): Promise<void>;
 }
+
+/** What MC_SET_OPTIONS sets: the license plate, the car info setting, and the six car numbers. */
+export type PersonaOptions = {
+    plateCode: number;
+    plateText: string;
+    carInfoSetting: number;
+    /** Six numbers of at most 2 characters each; empty when unset. */
+    carNumbers: string[];
+};
+
+/** A persona's look; the colors are the client's 32-bit ARGB values, read as signed. */
+export type PersonaPhysical = {
+    bodyType: number;
+    hairColor: number;
+    skinColor: number;
+    shirtColor: number;
+    pantsColor: number;
+};
+
+/** A persona's game data, as MC_GET_PLAYER_INFO and MC_GET_PLAYER_PHYSICAL carry it. */
+export type PersonaPlayer = PersonaOptions & {
+    personaId: number;
+    customerId: number;
+    name: string;
+    bankBalance: number;
+    carsOwned: number;
+    description: string;
+    physical: PersonaPhysical;
+};
 
 export interface IDatabaseServices {
     session: ISessionStore;

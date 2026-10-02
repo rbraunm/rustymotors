@@ -156,8 +156,7 @@ export class SessionTestHelper {
 					getPlayer: async () => { throw new Error("Not implemented in test"); },
 					getOwnedVehiclesForPerson: async () => [],
 					getVehicleAndParts: async () => null,
-					createNewCar: async () => 0,
-					purchaseCar: async () => 0,
+					purchaseStockCar: async () => undefined,
 				},
 				auth: {
 					isDatabaseConnected: true,
@@ -175,6 +174,10 @@ export class SessionTestHelper {
 					isPersonaNameTaken: async () => false,
 					createPersona: async () => undefined,
 					deletePersona: async () => false,
+					findPlayer: async () => undefined,
+					setOptions: async () => {},
+					setPhysical: async () => {},
+					setDescription: async () => {},
 				},
 			});
 		}
