@@ -1,4 +1,11 @@
-import { OldServerMessage, databaseProvider, getServerLogger } from "rusty-motors-shared";
+import {
+	OldServerMessage,
+	databaseProvider,
+	getServerLogger,
+	personaLevel,
+	personaPointsToNextLevel,
+	personaRank,
+} from "rusty-motors-shared";
 import { GenericRequestMessage } from "./GenericRequestMessage.js";
 import { PlayerInfoMessage } from "./PlayerInfoMessage.js";
 import type { MessageHandlerArgs, MessageHandlerResult } from "./handlers.js";
@@ -31,11 +38,12 @@ export async function _getPlayerInfo({
 	playerInfoMessage._licensesPlateText = player.plateText;
 	playerInfoMessage._carInfoSetttings = player.carInfoSetting;
 	playerInfoMessage._playerDescription = player.description;
-	playerInfoMessage._currentLevel = 1;
+	playerInfoMessage._currentLevel = personaLevel;
+	playerInfoMessage._currentRank = personaRank;
 	playerInfoMessage._currentClub = 0;
 	playerInfoMessage._maxInventorySlots = 100;
 	playerInfoMessage._numberOfInventorySlotsUsed = 0;
-	playerInfoMessage._numberOfPointsToNextLevel = 3;
+	playerInfoMessage._numberOfPointsToNextLevel = personaPointsToNextLevel;
 
 	log.debug(`[${connectionId}] Sending PlayerInfoMessage: ${playerInfoMessage.toString()}`);
 

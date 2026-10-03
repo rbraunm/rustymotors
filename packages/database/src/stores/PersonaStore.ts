@@ -17,7 +17,7 @@
 import { randomInt } from "node:crypto";
 import * as pg from "@databases/pg";
 import { type ConnectionPool, type ConnectionPoolConfig, type SQLQuery, sql } from "@databases/pg";
-import { type IPersonaStore, type PersonaOptions, type PersonaPhysical, type PersonaPlayer, type PersonaSummary, starterCash } from "rusty-motors-shared";
+import { type IPersonaStore, type PersonaCar, type PersonaOptions, type PersonaPhysical, type PersonaPlayer, type PersonaSummary, starterCash } from "rusty-motors-shared";
 
 type createConnectionPool = (
     connectionConfig?: string | ConnectionPoolConfig | undefined,
@@ -207,15 +207,42 @@ export class PersonaStore implements IPersonaStore {
         }
     }
 
-    async listPersonasOfLogins(loginNames: string[]): Promise<{ loginName: string; personaName: string }[]> {
+    async listPersonasOfLogins(loginNames: string[]): Promise<{ loginName: string; personaName: string; car: PersonaCar | null }[]> {
         const rows = (await this.pool.query(sql`
-            SELECT login.login_name, player.persona
+            SELECT login.login_name, player.persona, car.model_id, car.model_year, car.brand, car.model
             FROM login
             JOIN profile ON profile.customer_id = login.customer_id
             JOIN player ON player.player_id = profile.profile_id
+            LEFT JOIN LATERAL (
+                SELECT model.model_id, EXTRACT(YEAR FROM branded_part.mfg_date)::integer AS model_year, brand.brand,
+                    model.e_model AS model
+                FROM part
+                JOIN vehicle ON vehicle.vehicle_id = part.part_id
+                JOIN branded_part ON branded_part.branded_part_id = part.branded_part_id
+                JOIN model ON model.model_id = branded_part.model_id
+                JOIN brand ON brand.brand_id = model.brand_id
+                WHERE part.owner_id = player.player_id
+                ORDER BY part.part_id
+                LIMIT 1
+            ) car ON true
             WHERE login.login_name = ANY(${loginNames}) AND player.player_type_id = ${playerType}
-            ORDER BY login.login_name, profile.create_stamp, profile.profile_id`)) as { login_name: string; persona: string }[];
-        return rows.map((row) => ({ loginName: row.login_name, personaName: row.persona }));
+            ORDER BY login.login_name, profile.create_stamp, profile.profile_id`)) as {
+                login_name: string;
+                persona: string;
+                model_id: number | null;
+                model_year: number | null;
+                brand: string | null;
+                model: string | null;
+            }[];
+        return rows.map((row) => {
+            if (row.model_id === null) {
+                return { loginName: row.login_name, personaName: row.persona, car: null };
+            }
+            if (row.model_year === null || row.brand === null || row.model === null) {
+                throw new Error(`Car model ${row.model_id} of persona ${row.persona} has no year, brand or English name`);
+            }
+            return { loginName: row.login_name, personaName: row.persona, car: { modelYear: row.model_year, brand: row.brand, model: row.model } };
+        });
     }
 
     async isPersonaNameTaken(name: string): Promise<boolean> {

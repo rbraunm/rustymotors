@@ -17,7 +17,14 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import http from "node:http";
-import { databaseProvider, type ServerLogger } from "rusty-motors-shared";
+import {
+	carDisplayName,
+	databaseProvider,
+	personaLevel,
+	personaRank,
+	reputationRanks,
+	type ServerLogger,
+} from "rusty-motors-shared";
 
 /**
  * The ammolite portal's account service: creates, re-passwords, checks, and locks logins, and lists
@@ -132,7 +139,13 @@ export async function answerAccountRequest(path: string, body: Record<string, un
 			const personas = await databaseProvider.getPersonaStore().listPersonasOfLogins(accounts);
 			return [200, {
 				logins: await logins.findLogins(accounts),
-				characters: personas.map((persona) => ({ account: persona.loginName, name: persona.personaName })),
+				characters: personas.map((persona) => ({
+					account: persona.loginName,
+					name: persona.personaName,
+					level: personaLevel,
+					rank: reputationRanks[personaRank],
+					car: persona.car === null ? null : carDisplayName(persona.car.modelYear, persona.car.brand, persona.car.model),
+				})),
 			}];
 		}
 		default:

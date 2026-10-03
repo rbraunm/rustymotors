@@ -179,8 +179,18 @@ export interface IPersonaStore {
     /** Sets a live persona's description (MC_SET_PERSONA_DESCRIPTION); throws when there is no such live persona. */
     setDescription(personaId: number, description: string): Promise<void>;
 
-    /** The live personas of the given logins, by login name and persona name. */
-    listPersonasOfLogins(loginNames: string[]): Promise<{ loginName: string; personaName: string }[]>;
+    /** The live personas of the given logins, by login name and persona name, with each one's first car. */
+    listPersonasOfLogins(loginNames: string[]): Promise<{ loginName: string; personaName: string; car: PersonaCar | null }[]>;
+}
+
+/**
+ * A persona's first car (the starter car: no dealership sells another yet), as its model year, brand and
+ * model; null for a persona with no car.
+ */
+export interface PersonaCar {
+    modelYear: number;
+    brand: string;
+    model: string;
 }
 
 /** What MC_SET_OPTIONS sets: the license plate, the car info setting, and the six car numbers. */

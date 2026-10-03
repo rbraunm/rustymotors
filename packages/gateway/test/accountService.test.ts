@@ -4,7 +4,7 @@ import type http from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { databaseProvider, type IDatabaseServices } from "rusty-motors-shared";
+import { databaseProvider, type IDatabaseServices, type PersonaCar } from "rusty-motors-shared";
 import { handleAccountServiceRequest, readAccountServiceSettings, type AccountServiceSettings } from "../src/accountService.js";
 import { initializeRouteHandlers, processHttpRequest } from "../src/web.js";
 
@@ -18,7 +18,7 @@ const settings: AccountServiceSettings = {
 
 type Login = { name: string; password: string; isLocked: boolean; customerId: number };
 
-function registerLogins(logins: Login[], personas: { loginName: string; personaName: string }[] = []): Login[] {
+function registerLogins(logins: Login[], personas: { loginName: string; personaName: string; car: PersonaCar | null }[] = []): Login[] {
 	databaseProvider.register({
 		auth: {
 			findUser: async (name: string, password: string) => {
@@ -123,17 +123,23 @@ describe("account service logins", () => {
 });
 
 describe("account service characters", () => {
-	it("lists the logins it has and their live personas, so a missing login differs from one without personas", async () => {
+	it("lists the logins it has and their live personas with level, rank and car, so a missing login differs from one without personas", async () => {
 		registerLogins(
 			[
 				{ name: "admin", password: "admin", isLocked: false, customerId: 654321 },
 				{ name: "Marty_88", password: "x", isLocked: false, customerId: 1000001 },
 			],
-			[{ loginName: "admin", personaName: "Dr Brown" }, { loginName: "admin", personaName: "George" }],
+			[
+				{ loginName: "admin", personaName: "Dr Brown", car: null },
+				{ loginName: "admin", personaName: "George", car: { modelYear: 1957, brand: "Chevrolet", model: "Bel-Air" } },
+			],
 		);
 		expect(await call("/v1/characters", { accounts: ["admin", "Marty_88", "Biff"] })).toEqual([200, {
 			logins: ["admin", "Marty_88"],
-			characters: [{ account: "admin", name: "Dr Brown" }, { account: "admin", name: "George" }],
+			characters: [
+				{ account: "admin", name: "Dr Brown", level: 1, rank: "Newbie", car: null },
+				{ account: "admin", name: "George", level: 1, rank: "Newbie", car: "'57 Chevrolet Bel-Air" },
+			],
 		}]);
 		expect(await call("/v1/characters", { accounts: [] })).toEqual([400, { error: "accounts must list 1-100 logins" }]);
 	});

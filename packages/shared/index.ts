@@ -5,10 +5,15 @@ export { Configuration, getExternalWebOrigin, getGameRoomPorts, getServerConfigu
 export { configurationProvider, type GatewayConfigurationProvider } from './src/ConfigurationProvider.js';
 export { databaseProvider } from './src/database/DatabaseProvider.js';
 export {
+    carDisplayName,
     isPlateTextWellFormed,
     isRequestFromCustomer,
     maximumPersonasPerCustomer,
+    personaLevel,
+    personaPointsToNextLevel,
+    personaRank,
     plateTextMaximumLength,
+    reputationRanks,
     starterCash,
 } from './src/persona.js';
 export type {
@@ -18,6 +23,7 @@ export type {
     IAuthStore,
     IPersonaStore,
     PersonaSummary,
+    PersonaCar,
     PersonaOptions,
     PersonaPhysical,
     PersonaPlayer,
